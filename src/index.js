@@ -21,11 +21,12 @@ app.use("/api/admin/auth", require("./api/routes/admin.js"));
 
 app.use("/api/public", require("./api/routes/public.js"));
 
-app.listen(5000, () => {
-  console.log("Server is listening at port 5000");
+const PORT = process.env.PORT || 5000;
+app.listen(PORT, () => {
+  console.log(`Server is listening at port ${PORT}`);
 
-  // createDir(vars.imageFile.ORIGINAL_UPLOADS_DIR_PATH);
-  // createDir(vars.imageFile.COMPRESSED_UPLOADS_DIR_PATH);
+  createDir(vars.imageFile.ORIGINAL_UPLOADS_DIR_PATH);
+  createDir(vars.imageFile.COMPRESSED_UPLOADS_DIR_PATH);
 });
 
 /*

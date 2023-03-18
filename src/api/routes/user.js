@@ -553,10 +553,6 @@ router.post(
   }
 );
 
-// const fs = require("fs");
-// const { promisify } = require("util");
-// const unlinkAsync = promisify(fs.unlink);
-
 const { unlink } = require("node:fs/promises");
 
 router.post(
