@@ -14,7 +14,6 @@ const Course = require("../../databases/mongodb/models/Course");
 const {
   fetchPerson,
   isUser,
-  arePrereqSatisfied,
   isEligibleToTakeQuiz,
 } = require("../../middlewares");
 
@@ -390,7 +389,6 @@ router.post(
   "/verticals/:verticalId/courses/:courseId/units/:unitId/video/update-progress",
   fetchPerson,
   isUser,
-  arePrereqSatisfied,
   async (req, res) => {
     const { verticalId, courseId, unitId } = req.params;
     const { vdoWatchTimeInPercent } = req.body;
@@ -429,7 +427,6 @@ router.get(
   "/verticals/:verticalId/courses/:courseId/units/:unitId/quiz",
   fetchPerson,
   isUser,
-  arePrereqSatisfied,
   isEligibleToTakeQuiz,
   async (req, res) => {
     // todo : validation, make a middleware isEligibleToTakeQuiz
@@ -484,7 +481,6 @@ router.post(
   "/verticals/:verticalId/courses/:courseId/units/:unitId/quiz/submit",
   fetchPerson,
   isUser,
-  arePrereqSatisfied,
   isEligibleToTakeQuiz,
   async (req, res) => {
     // todo : validation, make a middleware isEligibleToTakeQuiz

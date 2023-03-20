@@ -84,10 +84,13 @@ router.get("/certificate/:certId", async (req, res) => {
       return res.status(404).json({ statusText: statusText.INVALID_CERT_ID });
     }
 
+    console.log(userDoc.mName);
+    console.log("mName" in userDoc);
+
     const holderName =
       userDoc.fName +
       " " +
-      (!("mName" in userDoc) || userDoc.mName.length === 0
+      (!userDoc.mName || userDoc.mName.length === 0
         ? ""
         : userDoc.mName + " ") +
       userDoc.lName;
@@ -102,7 +105,7 @@ router.get("/certificate/:certId", async (req, res) => {
       },
     });
   } catch (err) {
-    // console.log(err);
+    console.log(err);
     return res
       .status(500)
       .json({ statusText: statusText.INTERNAL_SERVER_ERROR });
