@@ -7,7 +7,7 @@ const cors = require("cors");
 app.use(cors());
 app.use(express.json()); // to use req.body
 
-// Mine
+// Mine returns
 const connectToMongoDB = require("./databases/mongodb/config");
 connectToMongoDB();
 
