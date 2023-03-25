@@ -1,20 +1,17 @@
 const express = require("express");
 const router = express.Router();
-const mongoose = require("mongoose");
 
 // My models
 const User = require("../../databases/mongodb/models/User");
 const Course = require("../../databases/mongodb/models/Course");
 
-// const { fetchPerson } = require("../middlewares");
-
 const statusText = require("../../utilities/status_text.js");
 const { vars } = require("../../utilities/constants");
-const { decodeCertificateId } = require("../../utilities/helper_functions");
 const {
+  isoDateStringToDDMMYYY,
+  decodeCertificateId,
   isRequiredUnitActivityPresent,
 } = require("../../utilities/helper_functions");
-const { response } = require("express");
 
 // ! what if the user's activity field is not present, and we include it in the projection
 
@@ -23,7 +20,7 @@ router.get("/certificate/:certId", async (req, res) => {
   // console.log(certId);
   // console.log(decodeCertificateId(certId));
 
-  const { userMongId, verticalId, courseId, unitId } =
+  const { userMongoId, verticalId, courseId, unitId } =
     decodeCertificateId(certId);
 
   try {
@@ -34,7 +31,7 @@ router.get("/certificate/:certId", async (req, res) => {
       activity: 1,
     };
 
-    const userDoc = await User.findById(userMongId, userProj);
+    const userDoc = await User.findById(userMongoId, userProj);
     // console.log(userDoc);
 
     if (!isRequiredUnitActivityPresent(userDoc, verticalId, courseId, unitId)) {
@@ -95,11 +92,13 @@ router.get("/certificate/:certId", async (req, res) => {
         : userDoc.mName + " ") +
       userDoc.lName;
 
+    console.log(unitDoc);
+
     res.status(200).json({
       statusText: statusText.SUCCESS,
       certInfo: {
         holderName: holderName,
-        passingDate: unitActivity.quiz.passingDate,
+        passingDate: isoDateStringToDDMMYYY(unitActivity.quiz.passingDate),
         courseName: courseDoc.name,
         unitId: unitId,
       },

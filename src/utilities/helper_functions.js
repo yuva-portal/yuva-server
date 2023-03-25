@@ -99,6 +99,11 @@ const addRequiredUnitActivity = (userDoc, verticalId, courseId, unitId) => {
   }
 };
 
+const isoDateStringToDDMMYYY = (isoString) => {
+  const DDMMYYYY = isoString.replace(/T.*/, "").split("-").reverse().join("-");
+  return DDMMYYYY;
+};
+
 module.exports = {
   encodeCertificateId,
   decodeCertificateId,
@@ -111,4 +116,6 @@ module.exports = {
   getUserActivityDefaultObj,
   isRequiredUnitActivityPresent,
   addRequiredUnitActivity,
+
+  isoDateStringToDDMMYYY,
 };

@@ -16,7 +16,7 @@ const statusText = {
   VERIFIED_TOKEN: "Token verified",
   REGISTRATION_SUCCESS: "Registered successfully",
 
-  SUCCESS: "All good",
+  SUCCESS: "Successful",
   FAIL: "Failed",
   PREREQ_NOT_SATISFIED:
     "Prerequisites not satisfied - Password not reset or not registered",
@@ -24,8 +24,12 @@ const statusText = {
     "Not eligible to take quiz - watch time less than required",
 
   VERTICAL_CREATE_SUCCESS: "Vertical created successfully",
+  VERTICAL_NOT_FOUND: "No such vertical exists",
+
   COURSE_CREATE_SUCCESS: "Course created successfully",
-  UNIT_ADD_SUCCESS: "Unit added successfully",
+  COURSE_NOT_FOUND: "No such course exists",
+
+  UNIT_CREATE_SUCCESS: "Unit added successfully",
 
   VERTICAL_DELETE_SUCCESS: "Vertical deleted successfully",
   COURSE_DELETE_SUCCESS: "Course deleted successfully",

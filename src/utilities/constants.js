@@ -17,6 +17,12 @@ const vars = {
     COMPRESS_IMG_HEIGHT_IN_PX: 400,
   },
   bcryptSaltRounds: 10,
+  token: {
+    expiry: {
+      ADMIN_IN_SEC: 60 * 60 * 12,
+      USER_IN_SEC: 60 * 60 * 24,
+    },
+  },
 };
 
 module.exports = { vars };

@@ -15,6 +15,7 @@ const bcrypt = require("bcryptjs");
 var jwt = require("jsonwebtoken");
 
 // My utilities
+const { vars } = require("../../utilities/constants.js");
 const statusText = require("../../utilities/status_text.js");
 const { fetchPerson, isAdmin } = require("../../middlewares");
 
@@ -36,12 +37,16 @@ router.post("/dummy", async (req, res) => {
   }
 });
 
+router.post("/verify-token", fetchPerson, isAdmin, async (req, res) => {
+  res.status(200).json({ statusText: statusText.SUCCESS });
+});
+
 //////////////////////////////////////// LOGIN ////////////////////////////////////////////////
 
 router.post("/login", async (req, res) => {
   // todo : validation
 
-  const adminId = req.body.adminId;
+  const adminId = req.body.adminId; // mongo works even if adminId and pass is an empty or undefined
   const enteredPassword = req.body.password;
 
   try {
@@ -56,21 +61,21 @@ router.post("/login", async (req, res) => {
 
     const hashedPassword = adminDoc.password;
 
-    const passwordCompare = await bcrypt.compare(
+    const isPasswordMatched = await bcrypt.compare(
       enteredPassword,
       hashedPassword
     );
 
-    if (!passwordCompare) {
+    if (!isPasswordMatched) {
       // wrong password
       return res
         .status(400)
         .json({ statusText: statusText.INVALID_CREDS, areCredsInvalid: true });
     }
-    console.log(adminDoc);
 
     // generate token
     const data = {
+      exp: Math.floor(Date.now() / 1000) + vars.token.expiry.ADMIN_IN_SEC,
       person: {
         mongoId: adminDoc._id,
         role: "admin",
@@ -100,34 +105,42 @@ router.get("/verticals/all", fetchPerson, isAdmin, async (req, res) => {
     res
       .status(200)
       .json({ statusText: statusText.SUCCESS, allVerticals: allVerticals });
-  } catch (error) {
-    // console.log(error);
+  } catch (err) {
+    // console.log(err.message);
     res.status(500).json({ statusText: statusText.FAIL });
   }
 });
 
+//! validated
 router.get(
   "/verticals/:verticalId/courses/all",
   fetchPerson,
   isAdmin,
   async (req, res) => {
-    console.log(req.originalUrl);
     const { verticalId } = req.params;
+    // verticalId = null;
 
     try {
-      const vertical = await Vertical.findById(verticalId);
-      // console.log(vertical);
+      const verticalDoc = await Vertical.findById(verticalId);
+
+      if (!verticalDoc) {
+        return res
+          .status(404)
+          .json({ statusText: statusText.VERTICAL_NOT_FOUND });
+      }
+
+      // console.log(verticalDoc);
 
       const allCourses = await Course.find({
-        _id: { $in: vertical.courseIds },
+        _id: { $in: verticalDoc.courseIds },
       });
       // console.log(allCourses);
 
       res
         .status(200)
         .json({ statusText: statusText.SUCCESS, allCourses: allCourses });
-    } catch (error) {
-      // console.log(error);
+    } catch (err) {
+      // console.log(err);
       res.status(500).json({ statusText: statusText.FAIL });
     }
   }
@@ -146,13 +159,19 @@ router.get(
     try {
       const courseDoc = await Course.findById(courseId);
 
+      if (!courseDoc) {
+        return res
+          .status(404)
+          .json({ statusText: statusText.COURSE_NOT_FOUND });
+      }
+
       // console.log(courseDoc);
 
       res
         .status(200)
         .json({ statusText: statusText.SUCCESS, allUnits: courseDoc.unitArr });
-    } catch (error) {
-      console.error(error.message);
+    } catch (err) {
+      console.error(err.message);
       res.status(500).json({ statusText: statusText.FAIL });
     }
   }
@@ -160,36 +179,28 @@ router.get(
 
 /////////////////////////////////////////// ADD ///////////////////////////////////////////
 
-router.post("/verticals/add", fetchPerson, async (req, res) => {
-  // todo : validation
-
-  console.log(req.body);
-
-  if (req.role != "admin") {
-    return res.status(400).json({ error: statusText.INVALID_TOKEN });
-  }
-
+//! validated
+router.post("/verticals/add", fetchPerson, isAdmin, async (req, res) => {
+  // no validation needed mongodb will handle even if name, desc, src is null/empty
+  // console.log(req.body);
   // const { name, desc, imgSrc } = req.body;
 
   try {
     await Vertical.create(req.body);
     res.status(200).json({ statusText: statusText.VERTICAL_CREATE_SUCCESS });
-  } catch (error) {
-    console.error(error.message);
-    res.status(500).json({ error: statusText.INTERNAL_SERVER_ERROR });
+  } catch (err) {
+    console.error(err.message);
+    res.status(500).json({ statusText: statusText.INTERNAL_SERVER_ERROR });
   }
 });
 
+//! validated, doubt
 router.post(
   "/verticals/:verticalId/courses/add",
   fetchPerson,
+  isAdmin,
   async (req, res) => {
-    if (req.role != "admin") {
-      return res.status(400).json({ error: statusText.INVALID_TOKEN });
-    }
-
     // todo : validation
-    const { name, desc } = req.body;
     const { verticalId } = req.params;
 
     try {
@@ -202,29 +213,44 @@ router.post(
         { new: true }
       );
 
+      if (!verticalDoc) {
+        return res
+          .status(404)
+          .json({ statusText: statusText.VERTICAL_NOT_FOUND });
+      }
+
       // console.log(verticalDoc); // new = true to return the updated doc
 
       res.status(200).json({ statusText: statusText.COURSE_CREATE_SUCCESS });
-    } catch (error) {
-      console.error(error.message);
-      res.status(500).json({ error: statusText.INTERNAL_SERVER_ERROR });
+    } catch (err) {
+      // console.error(err.message);
+      res.status(500).json({ statusText: statusText.INTERNAL_SERVER_ERROR });
     }
   }
 );
 
+// ! validated, doubt
 router.post(
   "/verticals/:verticalId/courses/:courseId/units/add",
   fetchPerson,
+  isAdmin,
   async (req, res) => {
-    if (req.role != "admin") {
-      return res.status(400).json({ error: statusText.INVALID_TOKEN });
-    }
-
-    console.log(req.originalUrl);
+    // console.log(req.originalUrl);
 
     // todo : validation
-    const unit = req.body;
-    const { courseId } = req.params;
+    let unit = req.body;
+    let { courseId } = req.params;
+
+    // ! manually check and add field in unit doc
+    unit = {
+      video: {
+        // title: "a",
+        desc: "a",
+        // vdoSrc: "",
+      },
+    };
+
+    // courseId = "640186d18eb87edf965c9941";
 
     try {
       const courseDoc = await Course.findOneAndUpdate(
@@ -233,25 +259,31 @@ router.post(
         { new: true }
       );
 
+      if (!courseDoc) {
+        return res
+          .status(404)
+          .json({ statusText: statusText.COURSE_NOT_FOUND });
+      }
+
       // console.log(courseDoc); // new = true to return the updated doc
 
-      res.status(200).json({ statusText: statusText.UNIT_ADD_SUCCESS });
-    } catch (error) {
-      console.error(error.message);
-      res.status(500).json({ error: statusText.INTERNAL_SERVER_ERROR });
+      res.status(200).json({ statusText: statusText.UNIT_CREATE_SUCCESS });
+    } catch (err) {
+      console.error(err.message);
+      res.status(500).json({ statusText: statusText.INTERNAL_SERVER_ERROR });
     }
   }
 );
 
 //////////////////////////////////////// DELETE //////////////////////////////////////////
 
+//! validated
 router.delete(
   "/verticals/:verticalId/delete",
   fetchPerson,
+  isAdmin,
   async (req, res) => {
-    if (req.role != "admin") {
-      return res.status(400).json({ error: statusText.INVALID_TOKEN });
-    }
+    // no validation needed mongodb will handle even if verticalId is null(404)/empty string
 
     // todo : validation
     const { verticalId } = req.params;
@@ -260,113 +292,131 @@ router.delete(
       const verticalDoc = await Vertical.findByIdAndDelete(verticalId); // returns the doc just before deletion
       // console.log(verticalDoc);
 
+      if (!verticalDoc) {
+        return res
+          .status(404)
+          .json({ statusText: statusText.VERTICAL_NOT_FOUND });
+      }
+
       await Course.deleteMany({
         _id: { $in: verticalDoc.courseIds },
       });
 
       res.status(200).json({ statusText: statusText.VERTICAL_DELETE_SUCCESS });
-    } catch (error) {
-      console.error(error.message);
-      res.status(500).json({ error: statusText.INTERNAL_SERVER_ERROR });
+    } catch (err) {
+      console.error(err.message);
+      res.status(500).json({ statusText: statusText.INTERNAL_SERVER_ERROR });
     }
   }
 );
 
+//! validated
 router.delete(
   "/verticals/:verticalId/courses/:courseId/delete",
   fetchPerson,
+  isAdmin,
   async (req, res) => {
-    if (req.role != "admin") {
-      return res.status(400).json({ error: statusText.INVALID_TOKEN });
-    }
-
     // todo : validation
+
     const { verticalId, courseId } = req.params;
-    console.log(courseId);
+    // console.log(courseId);
+
     const objectCourseId = mongoose.Types.ObjectId(courseId); // imp to convert to string to objectId
-    console.log(objectCourseId);
 
     try {
       const courseDoc = await Course.findByIdAndDelete(courseId);
       // console.log(courseDoc);
 
-      const verticalDoc = await Vertical.updateOne(
+      if (!courseDoc) {
+        return res
+          .status(404)
+          .json({ statusText: statusText.COURSE_NOT_FOUND });
+      }
+
+      const verticalDoc = await Vertical.findOneAndUpdate(
         { _id: verticalId },
         {
           $pull: {
             courseIds: { $in: [objectCourseId] },
           },
-        }
+        },
+        { new: true }
       );
+      // new = true to return updated doc
 
-      console.log(verticalDoc);
+      // console.log(verticalDoc);
 
       res.status(200).json({ statusText: statusText.COURSE_DELETE_SUCCESS });
-    } catch (error) {
-      console.error(error.message);
-      res.status(500).json({ error: statusText.INTERNAL_SERVER_ERROR });
+    } catch (err) {
+      // console.error(err.message);
+      res.status(500).json({ statusText: statusText.INTERNAL_SERVER_ERROR });
     }
   }
 );
 
+//! validated
 router.delete(
   "/verticals/:verticalId/courses/:courseId/units/:unitId/delete",
   fetchPerson,
+  isAdmin,
   async (req, res) => {
-    if (req.role != "admin") {
-      return res.status(400).json({ error: statusText.INVALID_TOKEN });
-    }
-
     // todo : validation
     const { verticalId, courseId, unitId } = req.params;
-    const objectUnitId = mongoose.Types.ObjectId(unitId);
+    const unitObjectId = mongoose.Types.ObjectId(unitId);
 
     try {
-      const courseDoc = await Course.updateOne(
+      const courseDoc = await Course.findOneAndUpdate(
         { _id: courseId },
         {
           $pull: {
-            unitArr: { _id: objectUnitId },
+            unitArr: { _id: unitObjectId },
           },
-        }
+        },
+        { new: true }
       );
 
-      console.log(courseDoc);
+      if (!courseDoc) {
+        return res
+          .status(404)
+          .json({ statusText: statusText.COURSE_NOT_FOUND });
+      }
+
+      console.log(courseDoc.unitArr.length);
 
       res.status(200).json({ statusText: statusText.UNIT_DELETE_SUCCESS });
-    } catch (error) {
-      console.error(error.message);
-      res.status(500).json({ error: statusText.INTERNAL_SERVER_ERROR });
+    } catch (err) {
+      console.error(err.message);
+      res.status(500).json({ statusText: statusText.INTERNAL_SERVER_ERROR });
     }
   }
 );
 
-router.post("/add-users", csvUpload(), async (req, res) => {
-  console.log(req.originalUrl);
-  // ! todo: SEND MAILS
+// router.post("/add-users", csvUpload(), async (req, res) => {
+//   console.log(req.originalUrl);
+//   // ! todo: SEND MAILS
 
-  try {
-    const input = req.files.userCreds.data; // csvUploads (in index.js) file adds file to req.files
-    const options = {};
-    parse(input, options, (err, records) => {
-      if (err) {
-        console.log(err);
-        res.status(500).json({ error: statusText.INTERNAL_SERVER_ERROR });
-      } else {
-        console.log(records);
+//   try {
+//     const input = req.files.userCreds.data; // csvUploads (in index.js) file adds file to req.files
+//     const options = {};
+//     parse(input, options, (err, records) => {
+//       if (err) {
+//         console.log(err);
+//         res.status(500).json({ error: statusText.INTERNAL_SERVER_ERROR });
+//       } else {
+//         console.log(records);
 
-        try {
-          // create users and send bulk emails
-        } catch (err) {
-          console.log(err);
-        }
-        res.status(200).json({ statusText: statusText.SUCCESS });
-      }
-    });
-  } catch (err) {
-    console.log(err.message);
-    res.status(500).json({ error: statusText.INTERNAL_SERVER_ERROR });
-  }
-});
+//         try {
+//           // create users and send bulk emails
+//         } catch (err) {
+//           console.log(err);
+//         }
+//         res.status(200).json({ statusText: statusText.SUCCESS });
+//       }
+//     });
+//   } catch (err) {
+//     console.log(err.message);
+//     res.status(500).json({ error: statusText.INTERNAL_SERVER_ERROR });
+//   }
+// });
 
 module.exports = router;

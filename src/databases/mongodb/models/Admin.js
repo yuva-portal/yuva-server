@@ -3,19 +3,22 @@ const mongoose = require("mongoose");
 const AdminSchema = mongoose.Schema({
   fName: {
     type: String,
+    default: "",
   },
   mName: {
     type: String,
+    default: "",
   },
   lName: {
     type: String,
+    default: "",
   },
 
   email: {
     type: String,
-    required: true,
-    unique: true,
+    default: "",
   },
+
   adminId: {
     type: String,
     required: true,
@@ -28,8 +31,9 @@ const AdminSchema = mongoose.Schema({
 
   phone: {
     type: String,
+    default: "",
   },
 });
 const Admin = mongoose.model("admin", AdminSchema);
-// Admin.createIndexes();
+Admin.createIndexes();
 module.exports = Admin;

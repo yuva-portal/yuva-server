@@ -4,11 +4,17 @@ const { UnitSchema } = require("./Unit");
 const CourseSchema = mongoose.Schema({
   name: {
     type: String,
-    required: true,
+    required: [true, "Course name is required"],
+    minLength: [1, "Course name is too short"],
+    maxLength: [100, "Course name is too long"],
+    trim: true,
   },
   desc: {
     type: String,
-    required: true,
+    required: [true, "Course description is required"],
+    minLength: [1, "Course description is too short"],
+    maxLength: [5000, "Course description is too long"],
+    trim: true,
   },
   unitArr: {
     type: [UnitSchema], // array of units
@@ -17,5 +23,4 @@ const CourseSchema = mongoose.Schema({
 });
 
 const Course = mongoose.model("course", CourseSchema);
-// Course.createIndexes();
 module.exports = Course;

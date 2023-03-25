@@ -1,20 +1,29 @@
 const mongoose = require("mongoose");
 
+// ! manual validation required, mongoose validation is not working
 const UnitSchema = mongoose.Schema({
   video: {
     title: {
       type: String,
-      required: true,
+      required: [true, "Video title is required"],
+      trim: true,
     },
     desc: {
       type: String,
       default: "",
+      trim: true,
     },
-    vdoSrc: { type: String, required: true },
+    vdoSrc: {
+      type: String,
+      required: [true, "Video source is required"],
+      trim: true,
+    },
   },
   text: {
     type: String,
-    default: "",
+    // default: "",
+    required: true,
+    trim: true,
   },
   activities: {
     type: Array,
