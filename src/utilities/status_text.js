@@ -29,6 +29,8 @@ const statusText = {
   COURSE_CREATE_SUCCESS: "Course created successfully",
   COURSE_NOT_FOUND: "No such course exists",
 
+  RESOURCE_NOT_FOUND: "Resource doesn't exist",
+
   UNIT_CREATE_SUCCESS: "Unit added successfully",
 
   VERTICAL_DELETE_SUCCESS: "Vertical deleted successfully",

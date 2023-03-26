@@ -21,7 +21,6 @@ const fetchPerson = (req, res, next) => {
 
   try {
     const data = jwt.verify(token, process.env.JWT_SECRET);
-    console.log(data);
     req.mongoId = data.person.mongoId;
     req.role = data.person.role;
 
@@ -83,6 +82,8 @@ const isEligibleToTakeQuiz = async (req, res, next) => {
   const verticalKey = `v${verticalId}`;
   const courseKey = `c${courseId}`;
   const unitKey = `u${unitId}`;
+
+  // console.log(userDoc.activity[verticalKey][courseKey][unitKey]);
 
   if (
     userDoc.activity === undefined ||

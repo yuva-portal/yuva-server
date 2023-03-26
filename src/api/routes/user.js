@@ -283,27 +283,47 @@ router.get(
     const { courseId } = req.params;
 
     try {
-      const courseDoc = await Course.findById(courseId);
+      const courseProj = {
+        name: 1,
+        desc: 1,
+        unitArr: 1,
+        _id: 0,
+      };
 
-      // console.log(courseDoc);
+      const courseDoc = await Course.findById(courseId, courseProj);
+
+      if (!courseDoc) {
+        return res
+          .status(401)
+          .json({ statusText: statusText.COURSE_NOT_FOUND });
+      }
+
+      console.log(courseDoc);
 
       res.status(200).json({
         statusText: statusText.SUCCESS,
         allUnits: courseDoc.unitArr,
-        courseDoc: { name: courseDoc.name, desc: courseDoc.desc },
+        courseInfo: { name: courseDoc.name, desc: courseDoc.desc },
       });
-    } catch (error) {
-      console.error(error.message);
-      res.status(500).json({ error: statusText.INTERNAL_SERVER_ERROR });
+    } catch (err) {
+      console.error(err.message);
+      res.status(500).json({ statusText: statusText.INTERNAL_SERVER_ERROR });
     }
   }
 );
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-// ! need to verify whether coursedoc exists or not
-// ! case: quiz is present in the unit or not, if no quiz then no cert
+/**
+ * ! need to verify whether coursedoc exists or not
+ * ! case: quiz is present in the unit or not, if no quiz then no cert
+ * ! if no quiz then also this route works and even calculates whether user if eligible to take quiz/cert or not
+ * ! if there's no quiz then no quiz/cert card is displayed on the frontend page
+ * ! and if user directly enters the url of a quiz, which belongs to a unit with no quiz
+ * ! that frontend quiz page can handle it on its own
+ */
 
+//! validated
 router.get(
   "/verticals/:verticalId/courses/:courseId/units/:unitId",
   fetchPerson,
@@ -324,6 +344,12 @@ router.get(
 
       const courseDoc = await Course.findById(courseId, courseProj);
 
+      if (!courseDoc) {
+        return res
+          .status(404)
+          .json({ statusText: statusText.COURSE_NOT_FOUND });
+      }
+
       let unit = null;
       courseDoc.unitArr.forEach((singleUnit) => {
         if (singleUnit._id == unitId) {
@@ -332,14 +358,14 @@ router.get(
       });
 
       const userProj = {
-        fName: 1,
-        mName: 1,
-        lName: 1,
+        // fName: 1,
+        // mName: 1,
+        // lName: 1,
         activity: 1,
       };
 
       // find user doc and decide whether user is eligible to take quiz  or get certificate
-      // cannot use middleware here because if he is not eligible then we just need to disable btn and display the page too
+      // cannot use eligible-middleware here because if he is not eligible then we just need to disable btn and display the page too, in other pages we redirect
 
       const userDoc = await User.findById(mongoId, userProj);
 
@@ -427,13 +453,16 @@ router.post(
   }
 );
 
+/***
+ * ! what if a user enters the url of a quiz, and takes unit doesnot contain a quiz
+ * ! in such a case frontend quiz page will handle it on its own
+ */
 router.get(
   "/verticals/:verticalId/courses/:courseId/units/:unitId/quiz",
   fetchPerson,
   isUser,
   isEligibleToTakeQuiz,
   async (req, res) => {
-    // todo : validation, make a middleware isEligibleToTakeQuiz
     // console.log(req.originalUrl);
 
     const { verticalId, courseId, unitId } = req.params;
@@ -445,8 +474,14 @@ router.get(
         unitArr: 1,
       };
 
-      // todo: check whether courseDoc or unitDoc exists and return 404 if not found
       const courseDoc = await Course.findById(courseId, courseProj);
+
+      if (!courseDoc) {
+        return res
+          .status(404)
+          .json({ statusText: statusText.COURSE_NOT_FOUND });
+      }
+
       //   console.log(courseDoc.unitArr.length);
 
       let unit = null;
@@ -455,6 +490,12 @@ router.get(
           unit = singleUnit;
         }
       });
+
+      if (!unit.quiz || unit.quiz.length === 0) {
+        return res
+          .status(404)
+          .json({ statusText: statusText.RESOURCE_NOT_FOUND });
+      }
 
       let userProj = {
         _id: 0,

@@ -21,6 +21,8 @@ const { fetchPerson, isAdmin } = require("../../middlewares");
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 
+// ! remove extra routes
+
 router.post("/dummy", async (req, res) => {
   //   console.log(req);
 
@@ -242,13 +244,13 @@ router.post(
     let { courseId } = req.params;
 
     // ! manually check and add field in unit doc
-    unit = {
-      video: {
-        // title: "a",
-        desc: "a",
-        // vdoSrc: "",
-      },
-    };
+    // unit = {
+    //   video: {
+    //     title: "a",
+    //     desc: "a",
+    //     vdoSrc: "",
+    //   },
+    // };
 
     // courseId = "640186d18eb87edf965c9941";
 

@@ -18,7 +18,6 @@ const {
 router.get("/certificate/:certId", async (req, res) => {
   const { certId } = req.params;
   // console.log(certId);
-  // console.log(decodeCertificateId(certId));
 
   const { userMongoId, verticalId, courseId, unitId } =
     decodeCertificateId(certId);
@@ -81,8 +80,8 @@ router.get("/certificate/:certId", async (req, res) => {
       return res.status(404).json({ statusText: statusText.INVALID_CERT_ID });
     }
 
-    console.log(userDoc.mName);
-    console.log("mName" in userDoc);
+    // console.log(userDoc.mName);
+    // console.log("mName" in userDoc);
 
     const holderName =
       userDoc.fName +
@@ -92,7 +91,7 @@ router.get("/certificate/:certId", async (req, res) => {
         : userDoc.mName + " ") +
       userDoc.lName;
 
-    console.log(unitDoc);
+    // console.log(unitDoc);
 
     res.status(200).json({
       statusText: statusText.SUCCESS,
@@ -104,7 +103,7 @@ router.get("/certificate/:certId", async (req, res) => {
       },
     });
   } catch (err) {
-    console.log(err);
+    // console.log(err);
     return res
       .status(500)
       .json({ statusText: statusText.INTERNAL_SERVER_ERROR });

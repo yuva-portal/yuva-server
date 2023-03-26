@@ -1,14 +1,15 @@
 const fs = require("fs");
 const { vars } = require("../utilities/constants");
 
-const encodeCertificateId = (userMongId, verticalId, courseId, unitId) => {
-  return userMongId + "-" + verticalId + "-" + courseId + "-" + unitId;
+const encodeCertificateId = (userMongoId, verticalId, courseId, unitId) => {
+  return verticalId + "-" + unitId + "-" + courseId + "-" + userMongoId;
 };
 
 const decodeCertificateId = (certId) => {
-  const [userMongId, verticalId, courseId, unitId] = certId.split("-");
+  const [verticalId, unitId, courseId, userMongoId] = certId.split("-");
+
   return {
-    userMongId: userMongId,
+    userMongoId: userMongoId,
     verticalId: verticalId,
     courseId: courseId,
     unitId: unitId,
@@ -56,6 +57,7 @@ const isRequiredUnitActivityPresent = (
   courseId,
   unitId
 ) => {
+  // console.log(userDoc);
   return (
     userDoc &&
     userDoc.activity &&
