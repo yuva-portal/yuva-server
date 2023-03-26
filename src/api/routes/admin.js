@@ -313,7 +313,7 @@ router.post(
       courseDoc.unitArr.push(unit);
       courseDoc.save((err, updatedCourseDoc) => {
         if (err) {
-          // console.error("apororv", err.message);
+          // console.error("apoorv", err.message);
 
           res
             .status(500)
