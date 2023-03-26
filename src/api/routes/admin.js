@@ -24,7 +24,7 @@ const { fetchPerson, isAdmin } = require("../../middlewares");
 // ! remove extra routes
 
 router.post("/dummy", async (req, res) => {
-  //   console.log(req);
+  console.log(req.body);
 
   try {
     const salt = await bcrypt.genSalt(10);
@@ -101,8 +101,20 @@ router.get("/verticals/all", fetchPerson, isAdmin, async (req, res) => {
   // console.log(req.originalUrl);
 
   try {
-    const allVerticals = await Vertical.find();
+    let allVerticals = await Vertical.find();
     // console.log(allVerticals);
+
+    allVerticals = allVerticals.map((oldDoc) => {
+      const newDoc = {
+        _id: oldDoc._id,
+        name: oldDoc.name,
+        desc: oldDoc.desc,
+        imgSrc: oldDoc.imgSrc,
+        courseCount: oldDoc.courseIds.length,
+      };
+
+      return newDoc;
+    });
 
     res
       .status(200)
@@ -133,10 +145,21 @@ router.get(
 
       // console.log(verticalDoc);
 
-      const allCourses = await Course.find({
+      let allCourses = await Course.find({
         _id: { $in: verticalDoc.courseIds },
       });
       // console.log(allCourses);
+
+      allCourses = allCourses.map((oldDoc) => {
+        const newDoc = {
+          _id: oldDoc._id,
+          name: oldDoc.name,
+          desc: oldDoc.desc,
+          unitCount: oldDoc.unitArr.length,
+        };
+
+        return newDoc;
+      });
 
       res
         .status(200)
@@ -169,9 +192,25 @@ router.get(
 
       // console.log(courseDoc);
 
+      let allUnits = courseDoc.unitArr;
+      allUnits = allUnits.map((oldDoc) => {
+        const newDoc = {
+          _id: oldDoc._id,
+          video: {
+            title: oldDoc.video.title,
+            desc: oldDoc.video.desc,
+            vdoSrc: oldDoc.video.vdoSrc,
+          },
+          activityCount: oldDoc.activities.length,
+          quizCount: oldDoc.quiz.length,
+        };
+
+        return newDoc;
+      });
+
       res
         .status(200)
-        .json({ statusText: statusText.SUCCESS, allUnits: courseDoc.unitArr });
+        .json({ statusText: statusText.SUCCESS, allUnits: allUnits });
     } catch (err) {
       console.error(err.message);
       res.status(500).json({ statusText: statusText.FAIL });
@@ -255,11 +294,13 @@ router.post(
     // courseId = "640186d18eb87edf965c9941";
 
     try {
-      const courseDoc = await Course.findOneAndUpdate(
-        { _id: courseId },
-        { $push: { unitArr: unit } },
-        { new: true }
-      );
+      // const courseDoc = await Course.findOneAndUpdate(
+      //   { _id: courseId }
+      //   { $push: { unitArr: unit } },
+      //   { new: true }
+      // );
+
+      const courseDoc = await Course.findById(courseId);
 
       if (!courseDoc) {
         return res
@@ -267,9 +308,24 @@ router.post(
           .json({ statusText: statusText.COURSE_NOT_FOUND });
       }
 
-      // console.log(courseDoc); // new = true to return the updated doc
+      console.log(unit);
 
-      res.status(200).json({ statusText: statusText.UNIT_CREATE_SUCCESS });
+      courseDoc.unitArr.push(unit);
+      courseDoc.save((err, updatedCourseDoc) => {
+        if (err) {
+          // console.error("errroroorororo", err.message);
+
+          res
+            .status(500)
+            .json({ statusText: statusText.INTERNAL_SERVER_ERROR });
+        } else {
+          // console.log(updatedCourseDoc);
+
+          res.status(200).json({ statusText: statusText.UNIT_CREATE_SUCCESS });
+        }
+      });
+
+      // console.log(courseDoc); // new = true to return the updated doc
     } catch (err) {
       console.error(err.message);
       res.status(500).json({ statusText: statusText.INTERNAL_SERVER_ERROR });

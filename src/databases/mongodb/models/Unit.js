@@ -22,7 +22,7 @@ const UnitSchema = mongoose.Schema({
   text: {
     type: String,
     // default: "",
-    required: true,
+    required: [true, "Video text content is required"],
     trim: true,
   },
   activities: {

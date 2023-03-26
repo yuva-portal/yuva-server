@@ -223,63 +223,92 @@ router.post("/verify-token", fetchPerson, isUser, async (req, res) => {
 });
 
 /////////////////////////////////////// All ///////////////////////////////////////////////
-
+// ! validated
 router.get("/verticals/all", async (req, res) => {
   // todo: verify role, reason: a student can paste the url on browser and potray himself as an admin
   // console.log(req.originalUrl);
 
   try {
-    const allVerticals = await Vertical.find();
+    let allVerticals = await Vertical.find();
+    // console.log(allVerticals);
+
+    allVerticals = allVerticals.map((oldDoc) => {
+      const newDoc = {
+        _id: oldDoc._id,
+        name: oldDoc.name,
+        desc: oldDoc.desc,
+        imgSrc: oldDoc.imgSrc,
+        courseCount: oldDoc.courseIds.length,
+      };
+
+      return newDoc;
+    });
+
     // console.log(allVerticals);
 
     res.status(200).json({
       statusText: statusText.SUCCESS,
       allVerticals: allVerticals,
     });
-  } catch (error) {
-    console.log(error);
+  } catch (err) {
+    console.log(err);
     res.status(500).json({ statusText: statusText.FAIL });
   }
 });
 
+//! validated
 router.get(
   "/verticals/:verticalId/courses/all",
   fetchPerson,
   isUser,
   async (req, res) => {
-    console.log(req.originalUrl);
-
     const { verticalId } = req.params;
 
     try {
-      const vertical = await Vertical.findById(verticalId);
-      // console.log(vertical);
+      const verticalDoc = await Vertical.findById(verticalId);
+      // console.log(verticalDoc);
 
-      const allCourses = await Course.find({
-        _id: { $in: vertical.courseIds },
+      if (!verticalDoc) {
+        return res
+          .status(404)
+          .json({ statusText: statusText.VERTICAL_NOT_FOUND });
+      }
+
+      let allCourses = await Course.find({
+        _id: { $in: verticalDoc.courseIds },
       });
+
+      allCourses = allCourses.map((oldDoc) => {
+        const newDoc = {
+          _id: oldDoc._id,
+          name: oldDoc.name,
+          desc: oldDoc.desc,
+          unitCount: oldDoc.unitArr.length,
+        };
+
+        return newDoc;
+      });
+
       // console.log(allCourses.length);
 
       res.status(200).json({
         statusText: statusText.SUCCESS,
         allCourses: allCourses,
-        userDoc: req.userDoc,
-        verticalDoc: { name: vertical.name, desc: vertical.desc },
+        verticalDoc: { name: verticalDoc.name, desc: verticalDoc.desc },
       });
-    } catch (error) {
-      // console.log(error);
-      res.status(400).json({ statusText: statusText.FAIL });
+    } catch (err) {
+      // console.log(err);
+      res.status(500).json({ statusText: statusText.FAIL });
     }
   }
 );
 
+// ! validated
 router.get(
   "/verticals/:verticalId/courses/:courseId/units/all",
   fetchPerson,
   isUser,
   async (req, res) => {
-    // todo : validation
-
     const { courseId } = req.params;
 
     try {
@@ -294,15 +323,31 @@ router.get(
 
       if (!courseDoc) {
         return res
-          .status(401)
+          .status(404)
           .json({ statusText: statusText.COURSE_NOT_FOUND });
       }
 
-      console.log(courseDoc);
+      // console.log(courseDoc);
+
+      let allUnits = courseDoc.unitArr;
+      allUnits = allUnits.map((oldDoc) => {
+        const newDoc = {
+          _id: oldDoc._id,
+          video: {
+            title: oldDoc.video.title,
+            desc: oldDoc.video.desc,
+            vdoSrc: oldDoc.video.vdoSrc,
+          },
+          activityCount: oldDoc.activities.length,
+          quizCount: oldDoc.quiz.length,
+        };
+
+        return newDoc;
+      });
 
       res.status(200).json({
         statusText: statusText.SUCCESS,
-        allUnits: courseDoc.unitArr,
+        allUnits: allUnits,
         courseInfo: { name: courseDoc.name, desc: courseDoc.desc },
       });
     } catch (err) {
@@ -334,6 +379,7 @@ router.get(
 
     const { verticalId, courseId, unitId } = req.params;
     const mongoId = req.mongoId;
+    console.log(mongoId);
 
     try {
       // find course and then the required unit from the unitArr of that course
@@ -358,9 +404,9 @@ router.get(
       });
 
       const userProj = {
-        // fName: 1,
-        // mName: 1,
-        // lName: 1,
+        fName: 1,
+        mName: 1,
+        lName: 1,
         activity: 1,
       };
 
@@ -368,6 +414,8 @@ router.get(
       // cannot use eligible-middleware here because if he is not eligible then we just need to disable btn and display the page too, in other pages we redirect
 
       const userDoc = await User.findById(mongoId, userProj);
+
+      console.log(userDoc);
 
       let isEligibleToTakeQuiz = false;
       let isCertGenerated = false;
@@ -594,7 +642,8 @@ router.post(
   }
 );
 
-const { unlink } = require("node:fs/promises");
+const { unlink, stat } = require("node:fs/promises");
+const { all } = require("./admin");
 
 router.post(
   "/verticals/:verticalId/courses/:courseId/units/:unitId/activity/submit",
