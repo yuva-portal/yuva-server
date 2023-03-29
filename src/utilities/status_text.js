@@ -43,6 +43,8 @@ const statusText = {
 
   FILE_UPLOAD_SUCCESS: "File uploaded successfully",
   FILE_UPLOAD_FAIL: "Failed to upload the file. Please try again",
+
+  ACTIVITY_SUBMISSION_LIMIT_EXCEEDED: "Activity submission limit exceeded",
 };
 
 module.exports = statusText;

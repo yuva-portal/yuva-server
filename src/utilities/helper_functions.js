@@ -79,23 +79,22 @@ const addRequiredUnitActivity = (userDoc, verticalId, courseId, unitId) => {
     return;
   }
 
-  //! use this method only to check a key in an object
-  if (userDoc.activity === undefined) {
+  if (!userDoc.activity) {
     userDoc["activity"] = {};
   }
 
   const verticalKey = `v${verticalId}`;
-  if (userDoc.activity[verticalKey] === undefined) {
+  if (!userDoc.activity[verticalKey]) {
     userDoc.activity[verticalKey] = {};
   }
 
   const courseKey = `c${courseId}`;
-  if (userDoc.activity[verticalKey][courseKey] === undefined) {
+  if (!userDoc.activity[verticalKey][courseKey]) {
     userDoc.activity[verticalKey][courseKey] = {};
   }
 
   const unitKey = `u${unitId}`;
-  if (userDoc.activity[verticalKey][courseKey][unitKey] === undefined) {
+  if (!userDoc.activity[verticalKey][courseKey][unitKey]) {
     userDoc.activity[verticalKey][courseKey][unitKey] =
       getUserActivityDefaultObj();
   }

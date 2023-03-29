@@ -1,6 +1,8 @@
 const express = require("express");
 const router = express.Router();
-const { default: mongoose } = require("mongoose");
+// const { default: mongoose } = require("mongoose");
+const mongoose = require("mongoose");
+
 require("dotenv").config();
 
 const { parse } = require("csv-parse");
@@ -23,21 +25,21 @@ const { fetchPerson, isAdmin } = require("../../middlewares");
 
 // ! remove extra routes
 
-router.post("/dummy", async (req, res) => {
-  console.log(req.body);
+// router.post("/dummy", async (req, res) => {
+//   console.log(req.body);
 
-  try {
-    const salt = await bcrypt.genSalt(10);
-    const newHashedPassword = await bcrypt.hash(req.body.password, salt);
-    req.body.password = newHashedPassword;
+//   try {
+//     const salt = await bcrypt.genSalt(10);
+//     const newHashedPassword = await bcrypt.hash(req.body.password, salt);
+//     req.body.password = newHashedPassword;
 
-    await Admin.create(req.body);
-    res.status(200).json({ statusText: statusText.LOGIN_IN_SUCCESS });
-  } catch (error) {
-    console.log(error.message);
-    res.status(500).json({ error: statusText.INTERNAL_SERVER_ERROR });
-  }
-});
+//     await Admin.create(req.body);
+//     res.status(200).json({ statusText: statusText.LOGIN_IN_SUCCESS });
+//   } catch (error) {
+//     console.log(error.message);
+//     res.status(500).json({ error: statusText.INTERNAL_SERVER_ERROR });
+//   }
+// });
 
 router.post("/verify-token", fetchPerson, isAdmin, async (req, res) => {
   res.status(200).json({ statusText: statusText.SUCCESS });

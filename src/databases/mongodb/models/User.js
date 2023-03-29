@@ -1,5 +1,34 @@
 const mongoose = require("mongoose");
 
+const isEmailSyntaxValid = (email) => {
+  return email
+    .toLowerCase()
+    .match(
+      /^(([^<>()[\]\\.,;:\s@"]+(\.[^<>()[\]\\.,;:\s@"]+)*)|.(".+"))@((\[[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\])|(([a-zA-Z\-0-9]+\.)+[a-zA-Z]{2,}))$/
+    );
+};
+
+const isPhoneSyntaxValid = (phone) => {
+  var phoneNum = phone.replace(/[^\d]/g, "");
+
+  if (
+    !/^(1\s|1|)?((\(\d{3}\))|\d{3})(\-|\s)?(\d{3})(\-|\s)?(\d{4})$/.test(phone)
+  ) {
+    return false;
+  }
+
+  return true;
+};
+
+const isPasswordPolicyFollowed = (password) => {
+  let regex = /^(?=.*[0-9])(?=.*[!@#$%^&*])[a-zA-Z0-9!@#$%^&*]{6,30}$/;
+  if (!regex.test(password)) {
+    return false;
+  }
+
+  return true;
+};
+
 const UserSchema = mongoose.Schema(
   {
     fName: {
@@ -30,6 +59,12 @@ const UserSchema = mongoose.Schema(
       // unique: true,
       trim: true,
       // todo: put a custom email syntax validator here, google srch this
+      validate: {
+        validator: isEmailSyntaxValid,
+        message: (props) => {
+          return "Email syntax is not valid";
+        },
+      },
     },
     userId: {
       type: String,
@@ -46,6 +81,12 @@ const UserSchema = mongoose.Schema(
       trim: true,
       // no maxlen here as we store hashed password which is too long, only maxlen on client side
       // todo: put a custom password policy validator here, google srch this, pass will be hashed and then stored therefore no maxLen
+      validate: {
+        validator: isPasswordPolicyFollowed,
+        message: (props) => {
+          return "Password policy is not followed";
+        },
+      },
     },
 
     //////////////////////
@@ -83,6 +124,13 @@ const UserSchema = mongoose.Schema(
       minLength: [1, "Phone is too short"],
       maxLength: [20, "Phone is too long"],
       trim: true,
+
+      validate: {
+        validator: isPhoneSyntaxValid,
+        message: (props) => {
+          return "Phone number is not valid";
+        },
+      },
     },
     addLine1: {
       type: String,
