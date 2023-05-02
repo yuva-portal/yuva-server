@@ -163,9 +163,11 @@ router.get(
         return newDoc;
       });
 
-      res
-        .status(200)
-        .json({ statusText: statusText.SUCCESS, allCourses: allCourses });
+      res.status(200).json({
+        statusText: statusText.SUCCESS,
+        verticalInfo: { name: verticalDoc.name, desc: verticalDoc.desc },
+        allCourses: allCourses,
+      });
     } catch (err) {
       // console.log(err);
       res.status(500).json({ statusText: statusText.FAIL });
@@ -478,5 +480,55 @@ router.delete(
 //     res.status(500).json({ error: statusText.INTERNAL_SERVER_ERROR });
 //   }
 // });
+
+/********************************************** EDIT ****************************************************/
+
+router.patch(
+  "/verticals/:verticalId/edit",
+  fetchPerson,
+  isAdmin,
+  async (req, res) => {
+    const { verticalId } = req.params;
+
+    try {
+      const verticalDoc = await Vertical.findById(verticalId);
+
+      if (!verticalDoc) {
+        return res
+          .status(404)
+          .json({ statusText: statusText.VERTICAL_NOT_FOUND });
+      }
+
+      // console.log(verticalDoc);
+
+      verticalDoc.findOneAndUpdate({_id: verticalId}, {})
+
+      let allCourses = await Course.find({
+        _id: { $in: verticalDoc.courseIds },
+      });
+      // console.log(allCourses);
+
+      allCourses = allCourses.map((oldDoc) => {
+        const newDoc = {
+          _id: oldDoc._id,
+          name: oldDoc.name,
+          desc: oldDoc.desc,
+          unitCount: oldDoc.unitArr.length,
+        };
+
+        return newDoc;
+      });
+
+      res.status(200).json({
+        statusText: statusText.SUCCESS,
+        verticalInfo: { name: verticalDoc.name, desc: verticalDoc.desc },
+        allCourses: allCourses,
+      });
+    } catch (err) {
+      // console.log(err);
+      res.status(500).json({ statusText: statusText.FAIL });
+    }
+  }
+);
 
 module.exports = router;

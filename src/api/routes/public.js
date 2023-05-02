@@ -12,8 +12,10 @@ const {
   decodeCertificateId,
   isRequiredUnitActivityPresent,
 } = require("../../utilities/helper_functions");
+const Vertical = require("../../databases/mongodb/models/Vertical");
 
 // ! what if the user's activity field is not present, and we include it in the projection
+// todo: verify vertical id and correct unit srch for loop
 
 router.get("/certificate/:certId", async (req, res) => {
   const { certId } = req.params;
@@ -58,6 +60,11 @@ router.get("/certificate/:certId", async (req, res) => {
       unitArr: 1,
     };
 
+    if (!courseDoc) {
+      console.log("Invalid cert Id: Course doc not found");
+      return res.status(404).json({ statusText: statusText.INVALID_CERT_ID });
+    }
+
     const courseDoc = await Course.findById(courseId, courseProj);
 
     if (!courseDoc) {
@@ -66,7 +73,7 @@ router.get("/certificate/:certId", async (req, res) => {
     }
 
     let unitDoc = null;
-
+    // ! blunder about searching unit through ids
     for (let i = 0; i < courseDoc.unitArr.length; i++) {
       const currUnit = courseDoc.unitArr[i];
       if (currUnit._id == unitId) {
