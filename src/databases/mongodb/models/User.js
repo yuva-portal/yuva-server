@@ -20,14 +20,14 @@ const isPhoneSyntaxValid = (phone) => {
   return true;
 };
 
-const isPasswordPolicyFollowed = (password) => {
-  let regex = /^(?=.*[0-9])(?=.*[!@#$%^&*])[a-zA-Z0-9!@#$%^&*]{6,30}$/;
-  if (!regex.test(password)) {
-    return false;
-  }
+// const isPasswordPolicyFollowed = (password) => {
+//   let regex = /^(?=.*[0-9])(?=.*[!@#$%^&*])[a-zA-Z0-9!@#$%^&*]{6,30}$/;
+//   if (!regex.test(password)) {
+//     return false;
+//   }
 
-  return true;
-};
+//   return true;
+// };
 
 const UserSchema = mongoose.Schema(
   {
@@ -81,12 +81,12 @@ const UserSchema = mongoose.Schema(
       trim: true,
       // no maxlen here as we store hashed password which is too long, only maxlen on client side
       // todo: put a custom password policy validator here, google srch this, pass will be hashed and then stored therefore no maxLen
-      validate: {
-        validator: isPasswordPolicyFollowed,
-        message: (props) => {
-          return "Password policy is not followed";
-        },
-      },
+    //   validate: {
+    //     validator: isPasswordPolicyFollowed,
+    //     message: (props) => {
+    //       return "Password policy is not followed";
+    //     },
+    //   },
     },
 
     //////////////////////

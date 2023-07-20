@@ -146,6 +146,7 @@ router.post("/check-userid-availability", async (req, res) => {
 router.post("/register", async (req, res) => {
   // console.log(req.originalUrl);
   // manual validation not required, mongooose validation running
+  console.log("here: ", req.body);
 
   const regisForm = req.body;
 
@@ -166,7 +167,7 @@ router.post("/register", async (req, res) => {
 
     res.status(200).json({ statusText: statusText.REGISTRATION_SUCCESS });
   } catch (err) {
-    // console.log(err.message);
+    console.log(err.message);
     //! note: todo.txt contains the ways to get only the first error from mongoose so that we can return it directly to client
     res.status(500).json({ statusText: statusText.INTERNAL_SERVER_ERROR });
   }
