@@ -19,7 +19,7 @@ const Vertical = require("../../databases/mongodb/models/Vertical");
 
 router.get("/certificate/:certId", async (req, res) => {
   const { certId } = req.params;
-  // console.log(certId);
+//   console.log(certId);
 
   const { userMongoId, verticalId, courseId, unitId } =
     decodeCertificateId(certId);
@@ -60,12 +60,9 @@ router.get("/certificate/:certId", async (req, res) => {
       unitArr: 1,
     };
 
-    if (!courseDoc) {
-      console.log("Invalid cert Id: Course doc not found");
-      return res.status(404).json({ statusText: statusText.INVALID_CERT_ID });
-    }
-
+    
     const courseDoc = await Course.findById(courseId, courseProj);
+    // console.log(courseDoc);
 
     if (!courseDoc) {
       console.log("Invalid cert Id: Course doc not found");
@@ -110,7 +107,7 @@ router.get("/certificate/:certId", async (req, res) => {
       },
     });
   } catch (err) {
-    // console.log(err);
+    console.log(err);
     return res
       .status(500)
       .json({ statusText: statusText.INTERNAL_SERVER_ERROR });

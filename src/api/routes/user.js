@@ -491,17 +491,14 @@ router.get(
                 // add default unit activity field to the user doc
                 addRequiredUnitActivity(userDoc, verticalId, courseId, unitId);
             }
+            // console.log("isCertGenerated: ", isCertGenerated);
 
             // we need courseInfo and userInfo for the "Get certificate button" which redirects on the cert's url and url contains courseId, unitId, userId
-
+            const certId = encodeCertificateId(userDoc._id, verticalId, courseDoc._id, unit._id)
+            // console.log(certId);
             res.status(200).json({
                 statusText: statusText.SUCCESS,
-                certId: encodeCertificateId(
-                    userDoc._id,
-                    verticalId,
-                    courseDoc._id,
-                    unit._id
-                ),
+                certId: certId,
                 unit: unit,
                 isEligibleToTakeQuiz: isEligibleToTakeQuiz,
                 isCertGenerated: isCertGenerated,

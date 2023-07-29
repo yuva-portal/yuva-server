@@ -5,6 +5,7 @@ const encodeCertificateId = (userMongoId, verticalId, courseId, unitId) => {
   return verticalId + "-" + unitId + "-" + courseId + "-" + userMongoId;
 };
 
+
 const decodeCertificateId = (certId) => {
   const [verticalId, unitId, courseId, userMongoId] = certId.split("-");
 
