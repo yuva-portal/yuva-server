@@ -198,9 +198,14 @@ router.post("/register", async (req, res) => {
             auth: mainPortalAuth
         };
 
-        const mainPortalResponse = await axios.post(mainPortalApiUrl, mainPortalUser, mainPortalConfig);
+        try {
+            const mainPortalResponse = await axios.post(mainPortalApiUrl, mainPortalUser, mainPortalConfig);
+        } catch (error) {   
+            return res.status(403).json({statusText: "Email already exists. Please try using different email."});
+        }
 
-        console.log('Main Portal Response:', mainPortalResponse.data); // Log the response data from the Main backend.
+
+        // console.log('Main Portal Response:', mainPortalResponse.data); // Log the response data from the Main backend.
 
         // hash password and update form
         const salt = await bcrypt.genSalt(vars.bcryptSaltRounds);
@@ -211,7 +216,6 @@ router.post("/register", async (req, res) => {
 
         res.status(200).json({ statusText: statusText.REGISTRATION_SUCCESS });
     } catch (err) {
-        console.log(err);
         res.status(500).json({ statusText: statusText.INTERNAL_SERVER_ERROR });
     }
 });
