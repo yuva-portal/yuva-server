@@ -2,7 +2,7 @@ require("dotenv").config();
 const express = require("express");
 const app = express();
 
-const csvUpload = require("express-fileupload");
+// const csvUpload = require("express-fileupload");
 const cors = require("cors");
 app.use(cors());
 app.use(express.json()); // to use req.body
@@ -11,8 +11,8 @@ app.use(express.json()); // to use req.body
 const connectToMongoDB = require("./databases/mongodb/config");
 connectToMongoDB();
 
-const { createDir } = require("./utilities/helper_functions");
-const { vars } = require("./utilities/constants");
+// const { createDir } = require("./utilities/helper_functions");
+// const { vars } = require("./utilities/constants");
 
 // routes
 app.use("/api/user/auth", require("./api/routes/user.js"));
@@ -25,8 +25,8 @@ const PORT = process.env.PORT || 8800;
 app.listen(PORT, () => {
   console.log(`Server is listening at port ${PORT}`);
 
-  createDir(vars.imageFile.ORIGINAL_UPLOADS_DIR_PATH);
-  createDir(vars.imageFile.COMPRESSED_UPLOADS_DIR_PATH);
+//   createDir(vars.imageFile.ORIGINAL_UPLOADS_DIR_PATH);
+//   createDir(vars.imageFile.COMPRESSED_UPLOADS_DIR_PATH);
 });
 
 /*
