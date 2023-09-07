@@ -1,12 +1,18 @@
 const express = require("express");
 const router = express.Router();
-// const { default: mongoose } = require("mongoose");
 const mongoose = require("mongoose");
-
+const basicAuth = require('express-basic-auth');
 require("dotenv").config();
 
-// const { parse } = require("csv-parse");
-// const csvUpload = require("express-fileupload");
+// Basic Authentication middleware
+const adminId = process.env.adminId;
+const adminPassword = process.env.adminPassword;
+
+const adminAuth = basicAuth({
+    users: { [adminId]: adminPassword }, // Replace with actual admin credentials
+    challenge: true, // Send a 401 Unauthorized response on failed authentication
+    unauthorizedResponse: 'Unauthorized', // Response message on failed authentication
+  });
 
 // My models
 const Admin = require("../../databases/mongodb/models/Admin");
@@ -25,8 +31,10 @@ const { fetchPerson, isAdmin } = require("../../middlewares");
 
 // ! remove extra routes
 
-router.post("/dummy", async (req, res) => {
-  console.log(req.body);
+
+
+router.post("/dummy", adminAuth, async (req, res) => {
+//   console.log(req.body);
 
   try {
     const salt = await bcrypt.genSalt(10);
@@ -41,13 +49,13 @@ router.post("/dummy", async (req, res) => {
   }
 });
 
-router.post("/verify-token", fetchPerson, isAdmin, async (req, res) => {
+router.post("/verify-token",adminAuth, fetchPerson, isAdmin, async (req, res) => {
   res.status(200).json({ statusText: statusText.SUCCESS });
 });
 
 //////////////////////////////////////// LOGIN ////////////////////////////////////////////////
 
-router.post("/login", async (req, res) => {
+router.post("/login", adminAuth, async (req, res) => {
   // todo : validation
 
   const adminId = req.body.adminId; // mongo works even if adminId and pass is an empty or undefined
@@ -99,7 +107,7 @@ router.post("/login", async (req, res) => {
 
 /////////////////////////////////////////// All //////////////////////////////////////////
 
-router.get("/verticals/all", fetchPerson, isAdmin, async (req, res) => {
+router.get("/verticals/all", adminAuth, fetchPerson, isAdmin, async (req, res) => {
   // console.log(req.originalUrl);
 
   try {
@@ -130,6 +138,7 @@ router.get("/verticals/all", fetchPerson, isAdmin, async (req, res) => {
 //! validated
 router.get(
   "/verticals/:verticalId/courses/all",
+  adminAuth,
   fetchPerson,
   isAdmin,
   async (req, res) => {
@@ -177,6 +186,7 @@ router.get(
 
 router.get(
   "/verticals/:verticalId/courses/:courseId/units/all",
+  adminAuth,
   fetchPerson,
   isAdmin,
   async (req, res) => {
@@ -225,7 +235,7 @@ router.get(
 /////////////////////////////////////////// ADD ///////////////////////////////////////////
 
 //! validated
-router.post("/verticals/add", fetchPerson, isAdmin, async (req, res) => {
+router.post("/verticals/add", adminAuth, fetchPerson, isAdmin, async (req, res) => {
   // no validation needed mongodb will handle even if name, desc, src is null/empty
   // console.log(req.body);
   // const { name, desc, imgSrc } = req.body;
@@ -242,6 +252,7 @@ router.post("/verticals/add", fetchPerson, isAdmin, async (req, res) => {
 //! validated, doubt
 router.post(
   "/verticals/:verticalId/courses/add",
+  adminAuth,
   fetchPerson,
   isAdmin,
   async (req, res) => {
@@ -277,6 +288,7 @@ router.post(
 // ! validated, doubt
 router.post(
   "/verticals/:verticalId/courses/:courseId/units/add",
+  adminAuth,
   fetchPerson,
   isAdmin,
   async (req, res) => {
@@ -342,6 +354,7 @@ router.post(
 //! validated
 router.delete(
   "/verticals/:verticalId/delete",
+  adminAuth,
   fetchPerson,
   isAdmin,
   async (req, res) => {
@@ -375,6 +388,7 @@ router.delete(
 //! validated
 router.delete(
   "/verticals/:verticalId/courses/:courseId/delete",
+  adminAuth,
   fetchPerson,
   isAdmin,
   async (req, res) => {
@@ -419,6 +433,7 @@ router.delete(
 //! validated
 router.delete(
   "/verticals/:verticalId/courses/:courseId/units/:unitId/delete",
+  adminAuth,
   fetchPerson,
   isAdmin,
   async (req, res) => {
@@ -485,6 +500,7 @@ router.delete(
 
 router.patch(
   "/verticals/:verticalId/edit",
+  adminAuth,
   fetchPerson,
   isAdmin,
   async (req, res) => {

@@ -1,11 +1,27 @@
 require("dotenv").config();
 const express = require("express");
 const app = express();
+const rateLimit = require('express-rate-limit');
+
 
 // const csvUpload = require("express-fileupload");
 const cors = require("cors");
-app.use(cors());
+const corsOptions = {
+    // origin: 'https://yuvaportal.youngindians.net', // Only allow requests from your website
+    origin: 'http://localhost:3000', // Only allow requests from your website
+    methods: 'GET,HEAD,PUT,PATCH,POST,DELETE',
+    credentials: true, // Enable cookies and authentication headers
+};
+app.use(cors(corsOptions));
 app.use(express.json()); // to use req.body
+
+// RATE LIMITER
+const limiter = rateLimit({
+    windowMs: 15 * 60 * 1000, // 15 minutes
+    max: 100, // Limit each IP to 100 requests per windowMs
+  });
+  
+  app.use(limiter);
 
 // Mine returns
 const connectToMongoDB = require("./databases/mongodb/config");
@@ -21,7 +37,7 @@ app.use("/api/admin/auth", require("./api/routes/admin.js"));
 
 app.use("/api/public", require("./api/routes/public.js"));
 
-const PORT = process.env.PORT || 8800;
+const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => {
   console.log(`Server is listening at port ${PORT}`);
 

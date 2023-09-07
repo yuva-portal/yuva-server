@@ -2,6 +2,8 @@ const express = require("express");
 const router = express.Router();
 const mongoose = require("mongoose");
 const axios = require('axios');
+const basicAuth = require('express-basic-auth');
+
 
 // require("dotenv").config();
 const bcrypt = require("bcryptjs");
@@ -12,6 +14,16 @@ var jwt = require("jsonwebtoken");
 const User = require("../../databases/mongodb/models/User");
 const Vertical = require("../../databases/mongodb/models/Vertical");
 const Course = require("../../databases/mongodb/models/Course");
+
+// Basic Authentication middleware
+const userId = process.env.userId;
+const userPassword = process.env.userPassword;
+
+const userAuth = basicAuth({
+    users: { [userId]: userPassword }, 
+    challenge: true, 
+    unauthorizedResponse: 'Unauthorized',
+  });
 
 // My middlewares
 const {
@@ -63,10 +75,9 @@ const {
 //   }
 // });
 
-///////////////////////////////////////////// Auth //////////////////////////////////////////////////////
 
 // Since main portal in the register form has no input field for username, username by default is email, and it can also login from email or username both. So here, we have to also handle case where user don't have username and wants to login. "Allow login with email also".
-router.post("/login", async (req, res) => {
+router.post("/login", userAuth, async (req, res) => {
     // console.log("login request received: ", req.body);
   // todo : validation
   // console.log(req.originalUrl);
@@ -144,7 +155,7 @@ router.post("/login", async (req, res) => {
 });
 
 
-router.post("/check-userid-availability", async (req, res) => {
+router.post("/check-userid-availability", userAuth , async (req, res) => {
     const desiredUserId = req.body.userId;
     console.log(desiredUserId);
 
@@ -169,9 +180,9 @@ router.post("/check-userid-availability", async (req, res) => {
     }
 });
 
-router.post("/register", async (req, res) => {
+router.post("/register", userAuth , async (req, res) => {
     const regisForm = req.body;
-    console.log(regisForm);
+    // console.log(regisForm);
 
     try {
 
@@ -220,7 +231,7 @@ router.post("/register", async (req, res) => {
     }
 });
 
-router.post("/reset-password", fetchPerson, isUser, async (req, res) => {
+router.post("/reset-password", userAuth , fetchPerson, isUser, async (req, res) => {
     // user is already logged in, so we dont need userId
     // console.log(req.originalUrl);
 
@@ -262,7 +273,7 @@ router.post("/reset-password", fetchPerson, isUser, async (req, res) => {
     }
 });
 
-router.post("/verify-token", fetchPerson, isUser, async (req, res) => {
+router.post("/verify-token", userAuth, fetchPerson, isUser, async (req, res) => {
     // console.log(req.originalUrl);
 
     try {
@@ -278,7 +289,7 @@ router.post("/verify-token", fetchPerson, isUser, async (req, res) => {
 
 /////////////////////////////////////// All ///////////////////////////////////////////////
 // ! validated
-router.get("/verticals/all", async (req, res) => {
+router.get("/verticals/all", userAuth, async (req, res) => {
     // todo: verify role, reason: a student can paste the url on browser and potray himself as an admin
     // console.log(req.originalUrl);
 
@@ -312,7 +323,7 @@ router.get("/verticals/all", async (req, res) => {
 
 //! validated
 router.get(
-    "/verticals/:verticalId/courses/all",
+    "/verticals/:verticalId/courses/all", userAuth,
     fetchPerson,
     isUser,
     async (req, res) => {
@@ -359,7 +370,7 @@ router.get(
 
 // ! validated
 router.get(
-    "/verticals/:verticalId/courses/:courseId/units/all",
+    "/verticals/:verticalId/courses/:courseId/units/all", userAuth,
     fetchPerson,
     isUser,
     async (req, res) => {
@@ -424,7 +435,7 @@ router.get(
 
 //! validated
 router.get(
-    "/verticals/:verticalId/courses/:courseId/units/:unitId",
+    "/verticals/:verticalId/courses/:courseId/units/:unitId", userAuth,
     fetchPerson,
     isUser,
     async (req, res) => {
@@ -515,7 +526,7 @@ router.get(
 );
 
 router.post(
-    "/verticals/:verticalId/courses/:courseId/units/:unitId/video/update-progress",
+    "/verticals/:verticalId/courses/:courseId/units/:unitId/video/update-progress", userAuth,
     fetchPerson,
     isUser,
     isUnitIdValid,
@@ -554,7 +565,7 @@ router.post(
  * ! in such a case frontend quiz page will handle it on its own
  */
 router.get(
-    "/verticals/:verticalId/courses/:courseId/units/:unitId/quiz",
+    "/verticals/:verticalId/courses/:courseId/units/:unitId/quiz", userAuth,
     fetchPerson,
     isUser,
     async (req, res) => {
@@ -643,7 +654,7 @@ router.get(
 );
 
 router.post(
-    "/verticals/:verticalId/courses/:courseId/units/:unitId/quiz/submit",
+    "/verticals/:verticalId/courses/:courseId/units/:unitId/quiz/submit" , userAuth,
     fetchPerson,
     isUser,
     doesQuizExist,
