@@ -182,7 +182,6 @@ router.post("/check-userid-availability", userAuth , async (req, res) => {
 
 router.post("/register", userAuth , async (req, res) => {
     const regisForm = req.body;
-    // console.log(regisForm);
 
     try {
 
@@ -208,10 +207,12 @@ router.post("/register", userAuth , async (req, res) => {
             },
             auth: mainPortalAuth
         };
+        // console.log("here: ", mainPortalApiUrl, "\n", mainPortalUser, "\n", mainPortalConfig);
 
         try {
             const mainPortalResponse = await axios.post(mainPortalApiUrl, mainPortalUser, mainPortalConfig);
-        } catch (error) {   
+        } catch (error) {  
+            // console.log("here1: ", error); 
             return res.status(403).json({statusText: "Email already exists. Please try using different email."});
         }
 
@@ -227,6 +228,7 @@ router.post("/register", userAuth , async (req, res) => {
 
         res.status(200).json({ statusText: statusText.REGISTRATION_SUCCESS });
     } catch (err) {
+        // console.log("here: ", err.message);
         res.status(500).json({ statusText: statusText.INTERNAL_SERVER_ERROR });
     }
 });
@@ -434,6 +436,20 @@ router.get(
  */
 
 //! validated
+
+router.get("/verticals/:verticalId/courses/:courseId/units/:unitId/get-cert-id", userAuth, fetchPerson, isUser, async (req,res)=>{
+    const { verticalId, courseId, unitId } = req.params;
+        const mongoId = req.mongoId;
+        try {
+            const certId = encodeCertificateId(mongoId, verticalId, courseId, unitId);
+            res.status(200).json({success: true, certId});
+            
+        } catch (error) {
+            res.status(500).json({ statusText: statusText.INTERNAL_SERVER_ERROR });
+        }
+})
+
+
 router.get(
     "/verticals/:verticalId/courses/:courseId/units/:unitId", userAuth,
     fetchPerson,
@@ -511,20 +527,26 @@ router.get(
             // we need courseInfo and userInfo for the "Get certificate button" which redirects on the cert's url and url contains courseId, unitId, userId
             const certId = encodeCertificateId(userDoc._id, verticalId, courseDoc._id, unit._id)
             // console.log(certId);
+            const unitActivity = userDoc.activity[`v${verticalId}`][`c${courseId}`][`u${unitId}`];
+            const storedWatchPercentage = unitActivity.video.watchTimeInPercent;
+            // console.log("storedWatchPercentage: ", storedWatchPercentage);
             res.status(200).json({
                 statusText: statusText.SUCCESS,
                 certId: certId,
                 unit: unit,
                 isEligibleToTakeQuiz: isEligibleToTakeQuiz,
                 isCertGenerated: isCertGenerated,
+                storedWatchPercentage: storedWatchPercentage,
+                videoWatchTimeCutoffPercentage: vars.activity.MIN_WATCH_TIME_IN_PERCENT
             });
         } catch (err) {
-            console.log(err);
+            // console.log(err);
             res.status(500).json({ statusText: statusText.INTERNAL_SERVER_ERROR });
         }
     }
 );
 
+//! MAJOR CHANGE: Now the watch percentage we get from client is the overall total percentage instead of add on
 router.post(
     "/verticals/:verticalId/courses/:courseId/units/:unitId/video/update-progress", userAuth,
     fetchPerson,
@@ -534,7 +556,7 @@ router.post(
         try {
             const { verticalId, courseId, unitId } = req.params;
             const { vdoWatchTimeInPercent } = req.body;
-            // console.log(vdoWatchTimeInPercent);
+            // console.log("vdoWatchTimeInPercent: ", vdoWatchTimeInPercent);
             const mongoId = req.mongoId;
 
             const userDoc = await User.findById(mongoId);
@@ -545,7 +567,10 @@ router.post(
                 userDoc.activity[`v${verticalId}`][`c${courseId}`][`u${unitId}`];
             // unitActivity is a reference var to userDoc.activity[vKey][ckey][uKey]
 
-            unitActivity.video.watchTimeInPercent += vdoWatchTimeInPercent; // this line updates userDoc
+            // newPercent = oldPercent + latest(current)
+            // unitActivity.video.watchTimeInPercent += vdoWatchTimeInPercent; // this line updates userDoc
+            //! Point where the major change occurs
+            unitActivity.video.watchTimeInPercent = vdoWatchTimeInPercent; // this line updates userDoc
 
             const updatedDoc = await User.findByIdAndUpdate(mongoId, userDoc, {
                 new: true,

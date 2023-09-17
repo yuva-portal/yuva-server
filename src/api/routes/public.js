@@ -47,9 +47,9 @@ router.get("/certificate/:certId", userAuth, async (req, res) => {
     // console.log(userDoc);
 
     if (!isRequiredUnitActivityPresent(userDoc, verticalId, courseId, unitId)) {
-      console.log("Invalid cert Id: Invalid User mongoId");
+    //   console.log("Invalid cert Id: Invalid User mongoId");
 
-      return res.status(404).json({ statusText: statusText.INVALID_CERT_ID });
+      return res.status(404).json({success: false, statusText: statusText.INVALID_CERT_ID });
     }
 
     const unitActivity =
@@ -60,10 +60,10 @@ router.get("/certificate/:certId", userAuth, async (req, res) => {
       unitActivity.quiz.scoreInPercent <
       vars.activity.CERTIFICATE_GENERATION_CUT_OFF_IN_PERCENT
     ) {
-      console.log("Quiz score less than cert cut off");
+    //   console.log("Quiz score less than cert cut off");
       return res
         .status(404)
-        .json({ statusText: statusText.CERT_CUTOFF_NOT_CROSSED });
+        .json({success: false, statusText: statusText.CERT_CUTOFF_NOT_CROSSED });
     }
 
     const courseProj = {
@@ -76,8 +76,8 @@ router.get("/certificate/:certId", userAuth, async (req, res) => {
     // console.log(courseDoc);
 
     if (!courseDoc) {
-      console.log("Invalid cert Id: Course doc not found");
-      return res.status(404).json({ statusText: statusText.INVALID_CERT_ID });
+    //   console.log("Invalid cert Id: Course doc not found");
+      return res.status(404).json({ success: false, statusText: statusText.INVALID_CERT_ID });
     }
 
     let unitDoc = null;
@@ -91,8 +91,8 @@ router.get("/certificate/:certId", userAuth, async (req, res) => {
     }
 
     if (!unitDoc) {
-      console.log("Invalid cert Id: Unit doc not found");
-      return res.status(404).json({ statusText: statusText.INVALID_CERT_ID });
+    //   console.log("Invalid cert Id: Unit doc not found");
+      return res.status(404).json({success: false, statusText: statusText.INVALID_CERT_ID });
     }
 
     // console.log(userDoc.mName);
@@ -109,6 +109,7 @@ router.get("/certificate/:certId", userAuth, async (req, res) => {
     // console.log(unitDoc);
 
     res.status(200).json({
+        success: true,
       statusText: statusText.SUCCESS,
       certInfo: {
         holderName: holderName,

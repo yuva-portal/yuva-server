@@ -7,11 +7,12 @@ const rateLimit = require('express-rate-limit');
 // const csvUpload = require("express-fileupload");
 const cors = require("cors");
 const corsOptions = {
-    // origin: 'https://yuvaportal.youngindians.net', // Only allow requests from your website
-    origin: 'http://localhost:3000', // Only allow requests from your website
+    origin: 'https://yuvaportal.youngindians.net', // Only allow requests from your website
+    // origin: 'http://localhost:3000', // Only allow requests from your website
     methods: 'GET,HEAD,PUT,PATCH,POST,DELETE',
     credentials: true, // Enable cookies and authentication headers
 };
+
 app.use(cors(corsOptions));
 app.use(express.json()); // to use req.body
 
