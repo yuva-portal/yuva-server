@@ -20,10 +20,10 @@ const userId = process.env.userId;
 const userPassword = process.env.userPassword;
 
 const userAuth = basicAuth({
-    users: { [userId]: userPassword }, 
-    challenge: true, 
+    users: { [userId]: userPassword },
+    challenge: true,
     unauthorizedResponse: 'Unauthorized',
-  });
+});
 
 // My middlewares
 const {
@@ -79,85 +79,85 @@ const {
 // Since main portal in the register form has no input field for username, username by default is email, and it can also login from email or username both. So here, we have to also handle case where user don't have username and wants to login. "Allow login with email also".
 router.post("/login", userAuth, async (req, res) => {
     // console.log("login request received: ", req.body);
-  // todo : validation
-  // console.log(req.originalUrl);
-  // console.log(req.body);
+    // todo : validation
+    // console.log(req.originalUrl);
+    // console.log(req.body);
 
-  //userId can be email too....
-  let userIdOrEmail = req.body.userId; // mongo works even if userId and pass are empty, undefined, or null
-  let enteredPassword = req.body.password;
+    //userId can be email too....
+    let userIdOrEmail = req.body.userId; // mongo works even if userId and pass are empty, undefined, or null
+    let enteredPassword = req.body.password;
 
-  try {
-    // Step 1: Send request to Main portal to check user credentials
-    const mainPortalApiUrl = 'http://yiweb.evalue8.info/wp-json/wp/v2/users/me'; // Replace with the Main portal login API URL.
-    const mainPortalAuth = {
-      username: userIdOrEmail,
-      password: enteredPassword
-    };
-
-    const mainPortalConfig = {
-      headers: {
-        'Content-Type': 'application/json'
-      },
-      auth: mainPortalAuth
-    };
-
-    let mainPortalResponse;
     try {
-      mainPortalResponse = await axios.post(mainPortalApiUrl, null, mainPortalConfig);
-    //   console.log("here: ", mainPortalResponse);
-    } catch (error) {
-        // Main backend returned 401 status, indicating invalid credentials.
-        return res.status(401).json({ statusText: statusText.INVALID_CREDS, areCredsInvalid: true });
+        // Step 1: Send request to Main portal to check user credentials
+        const mainPortalApiUrl = 'http://yiweb.evalue8.info/wp-json/wp/v2/users/me'; // Replace with the Main portal login API URL.
+        const mainPortalAuth = {
+            username: userIdOrEmail,
+            password: enteredPassword
+        };
+
+        const mainPortalConfig = {
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            auth: mainPortalAuth
+        };
+
+        let mainPortalResponse;
+        try {
+            mainPortalResponse = await axios.post(mainPortalApiUrl, null, mainPortalConfig);
+            //   console.log("here: ", mainPortalResponse);
+        } catch (error) {
+            // Main backend returned 401 status, indicating invalid credentials.
+            return res.status(401).json({ statusText: statusText.INVALID_CREDS, areCredsInvalid: true });
+        }
+
+        const mainPortalUser = mainPortalResponse.data;
+        // console.log("here: ", mainPortalUser);
+
+        // Step 2: Check if the user is in the Yuva Portal DB
+        let userDoc = await User.findOne({ userId: userIdOrEmail });
+        // Below line is not needed as userId will always be in the userSchema. But still going to search it this way also.
+        if (!userDoc) userDoc = await User.findOne({ email: userIdOrEmail });
+
+        if (!userDoc) {
+            // User not found in the Yuva Portal DB, create the user.
+            const salt = await bcrypt.genSalt(vars.bcryptSaltRounds);
+            const hashedPassword = await bcrypt.hash(enteredPassword, salt);
+
+            const newUser = {
+                userId: userIdOrEmail,
+                password: hashedPassword,
+                email: mainPortalUser.email,
+                fName: mainPortalUser.first_name,
+                lName: mainPortalUser.last_name
+            };
+
+
+            userDoc = await User.create(newUser);
+        }
+
+        // Step 3: Generate token
+        const data = {
+            exp: Math.floor(Date.now() / 1000) + vars.token.expiry.USER_IN_SEC,
+            person: {
+                mongoId: userDoc._id,
+                role: "user",
+            },
+        };
+
+        const token = jwt.sign(data, process.env.JWT_SECRET);
+
+        res.status(200).json({ statusText: statusText.LOGIN_IN_SUCCESS, token: token });
+    } catch (err) {
+        console.log(err.message);
+        res.status(500).json({ statusText: statusText.INTERNAL_SERVER_ERROR });
     }
-
-    const mainPortalUser = mainPortalResponse.data;
-    // console.log("here: ", mainPortalUser);
-
-    // Step 2: Check if the user is in the Yuva Portal DB
-    let userDoc = await User.findOne({ userId: userIdOrEmail });
-    // Below line is not needed as userId will always be in the userSchema. But still going to search it this way also.
-    if(!userDoc) userDoc = await User.findOne({email: userIdOrEmail});
-
-    if (!userDoc) {
-      // User not found in the Yuva Portal DB, create the user.
-      const salt = await bcrypt.genSalt(vars.bcryptSaltRounds);
-      const hashedPassword = await bcrypt.hash(enteredPassword, salt);
-
-      const newUser = {
-        userId: userIdOrEmail,
-        password: hashedPassword,
-        email: mainPortalUser.email,
-        fName: mainPortalUser.first_name,
-        lName: mainPortalUser.last_name
-      };
-
-
-      userDoc = await User.create(newUser);
-    }
-
-    // Step 3: Generate token
-    const data = {
-      exp: Math.floor(Date.now() / 1000) + vars.token.expiry.USER_IN_SEC,
-      person: {
-        mongoId: userDoc._id,
-        role: "user",
-      },
-    };
-
-    const token = jwt.sign(data, process.env.JWT_SECRET);
-
-    res.status(200).json({ statusText: statusText.LOGIN_IN_SUCCESS, token: token});
-  } catch (err) {
-    console.log(err.message);
-    res.status(500).json({ statusText: statusText.INTERNAL_SERVER_ERROR });
-  }
 });
 
 
-router.post("/check-userid-availability", userAuth , async (req, res) => {
+router.post("/check-userid-availability", userAuth, async (req, res) => {
     const desiredUserId = req.body.userId;
-    console.log(desiredUserId);
+    // console.log(desiredUserId);
 
     try {
         const userDoc = await User.findOne({ userId: desiredUserId });
@@ -180,7 +180,7 @@ router.post("/check-userid-availability", userAuth , async (req, res) => {
     }
 });
 
-router.post("/register", userAuth , async (req, res) => {
+router.post("/register", userAuth, async (req, res) => {
     const regisForm = req.body;
 
     try {
@@ -211,9 +211,9 @@ router.post("/register", userAuth , async (req, res) => {
 
         try {
             const mainPortalResponse = await axios.post(mainPortalApiUrl, mainPortalUser, mainPortalConfig);
-        } catch (error) {  
+        } catch (error) {
             // console.log("here1: ", error); 
-            return res.status(403).json({statusText: "Email already exists. Please try using different email."});
+            return res.status(403).json({ statusText: "Email already exists. Please try using different email." });
         }
 
 
@@ -233,7 +233,7 @@ router.post("/register", userAuth , async (req, res) => {
     }
 });
 
-router.post("/reset-password", userAuth , fetchPerson, isUser, async (req, res) => {
+router.post("/reset-password", userAuth, fetchPerson, isUser, async (req, res) => {
     // user is already logged in, so we dont need userId
     // console.log(req.originalUrl);
 
@@ -279,7 +279,7 @@ router.post("/verify-token", userAuth, fetchPerson, isUser, async (req, res) => 
     // console.log(req.originalUrl);
 
     try {
-        const userDoc = await User.findById(req.mongoId);
+        const userDoc = await User.findById(req.mongoId).select('-_id -password -activity').exec();
         return res
             .status(200)
             .json({ statusText: statusText.VERIFIED_TOKEN, userDoc: userDoc });
@@ -289,7 +289,19 @@ router.post("/verify-token", userAuth, fetchPerson, isUser, async (req, res) => 
     }
 });
 
-/////////////////////////////////////// All ///////////////////////////////////////////////
+router.post("/update-user", userAuth, fetchPerson, isUser, async (req, res) => {
+    // console.log(req.originalUrl);
+    const updatedDoc = req.body;
+    console.log(updatedDoc);
+    try {
+        const userDoc = await User.findByIdAndUpdate(req.mongoId, updatedDoc, {new: true});
+        return res.status(200).json({ statusText: statusText.VERIFIED_TOKEN, userDoc: userDoc });
+    } catch (error) {
+        console.error(error.message);
+        res.status(500).json({ statusText: statusText.INTERNAL_SERVER_ERROR });
+    }
+});
+
 // ! validated
 router.get("/verticals/all", userAuth, async (req, res) => {
     // todo: verify role, reason: a student can paste the url on browser and potray himself as an admin
@@ -437,16 +449,16 @@ router.get(
 
 //! validated
 
-router.get("/verticals/:verticalId/courses/:courseId/units/:unitId/get-cert-id", userAuth, fetchPerson, isUser, async (req,res)=>{
+router.get("/verticals/:verticalId/courses/:courseId/units/:unitId/get-cert-id", userAuth, fetchPerson, isUser, async (req, res) => {
     const { verticalId, courseId, unitId } = req.params;
-        const mongoId = req.mongoId;
-        try {
-            const certId = encodeCertificateId(mongoId, verticalId, courseId, unitId);
-            res.status(200).json({success: true, certId});
-            
-        } catch (error) {
-            res.status(500).json({ statusText: statusText.INTERNAL_SERVER_ERROR });
-        }
+    const mongoId = req.mongoId;
+    try {
+        const certId = encodeCertificateId(mongoId, verticalId, courseId, unitId);
+        res.status(200).json({ success: true, certId });
+
+    } catch (error) {
+        res.status(500).json({ statusText: statusText.INTERNAL_SERVER_ERROR });
+    }
 })
 
 
@@ -679,7 +691,7 @@ router.get(
 );
 
 router.post(
-    "/verticals/:verticalId/courses/:courseId/units/:unitId/quiz/submit" , userAuth,
+    "/verticals/:verticalId/courses/:courseId/units/:unitId/quiz/submit", userAuth,
     fetchPerson,
     isUser,
     doesQuizExist,

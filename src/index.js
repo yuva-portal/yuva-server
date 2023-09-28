@@ -14,6 +14,7 @@ const corsOptions = {
 };
 
 app.use(cors(corsOptions));
+// app.use(cors());
 app.use(express.json()); // to use req.body
 
 // RATE LIMITER
@@ -22,7 +23,7 @@ const limiter = rateLimit({
     max: 100, // Limit each IP to 100 requests per windowMs
   });
   
-  app.use(limiter);
+app.use(limiter);
 
 // Mine returns
 const connectToMongoDB = require("./databases/mongodb/config");

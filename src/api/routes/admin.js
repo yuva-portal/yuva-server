@@ -60,10 +60,13 @@ router.post("/login", adminAuth, async (req, res) => {
 
   const adminId = req.body.adminId; // mongo works even if adminId and pass is an empty or undefined
   const enteredPassword = req.body.password;
+  console.log("adminId: ", adminId);
+  console.log("enteredPassword: ", enteredPassword);
 
   try {
     // match creds
     const adminDoc = await Admin.findOne({ adminId: adminId });
+    console.log(adminDoc);
     if (!adminDoc) {
       // wrong adminId
       return res
