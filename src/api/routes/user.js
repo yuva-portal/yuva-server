@@ -302,6 +302,31 @@ router.post("/update-user", userAuth, fetchPerson, isUser, async (req, res) => {
     }
 });
 
+//!TO DELETE
+// router.get("/add-data", async (req, res)=>{
+//     const allUsers = await User.find();
+//     for(let i = 0; i<allUsers.length; i++){
+//         console.log("USER ", i+1);
+//         let activity = allUsers[i].activity;
+
+//         for(vertical in activity){
+//             for(course in activity[vertical]){
+//                 for(unit in activity[vertical][course]){
+//                     for(quiz in activity[vertical][course][unit]){
+//                         const quizScore = activity[vertical][course][unit].quiz.scoreInPercent;
+//                         if(quizScore>=60){
+//                             const verticalId = vertical.slice(1);
+//                             await Vertical.findByIdAndUpdate(verticalId, { $inc: { certUnlocked: 1 } });
+//                         }
+//                     }
+//                 }
+//             }
+//         }
+//         // if(i==3)break;
+//     }
+//     res.end();
+// })
+
 // ! validated
 router.get("/verticals/all", userAuth, async (req, res) => {
     // todo: verify role, reason: a student can paste the url on browser and potray himself as an admin
@@ -318,6 +343,7 @@ router.get("/verticals/all", userAuth, async (req, res) => {
                 desc: oldDoc.desc,
                 imgSrc: oldDoc.imgSrc,
                 courseCount: oldDoc.courseIds.length,
+                certUnlocked: oldDoc.certUnlocked ? oldDoc.certUnlocked: 0
             };
 
             return newDoc;
@@ -732,6 +758,10 @@ router.post(
                 ) {
                     hasPassedQuiz = true;
                     hasPassedQuizFirstTime = true;
+                    // increase number of cert unlocked for this vertical by one
+
+                    await Vertical.findByIdAndUpdate(verticalId, { $inc: { certUnlocked: 1 } });
+
                 }
 
                 const updatedDoc = await User.findByIdAndUpdate(mongoId, userDoc, {

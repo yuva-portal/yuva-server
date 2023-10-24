@@ -13,8 +13,8 @@ const corsOptions = {
     credentials: true, // Enable cookies and authentication headers
 };
 
-app.use(cors(corsOptions));
-// app.use(cors());
+// app.use(cors(corsOptions));
+app.use(cors());
 app.use(express.json()); // to use req.body
 
 // RATE LIMITER
