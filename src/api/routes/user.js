@@ -75,6 +75,24 @@ const {
 //   }
 // });
 
+// router.post('/update-password', async (req, res)=>{
+//     const userId = req.body.id;
+//     const newPass = req.body.password;
+//     const salt = await bcrypt.genSalt(vars.bcryptSaltRounds);
+//     const hashedPassword = await bcrypt.hash(newPass, salt);
+
+//     const userr = await User.findById(userId);
+//     console.log(userr);
+//     console.log(newPass);
+//     console.log(hashedPassword);
+
+//     const updatedUser = await User.findByIdAndUpdate(userId, {password: hashedPassword}, {new: true});
+
+//     res.json({});
+
+
+// })
+
 
 // Since main portal in the register form has no input field for username, username by default is email, and it can also login from email or username both. So here, we have to also handle case where user don't have username and wants to login. "Allow login with email also".
 router.post("/login", userAuth, async (req, res) => {
@@ -88,8 +106,35 @@ router.post("/login", userAuth, async (req, res) => {
     let enteredPassword = req.body.password;
 
     try {
+        //!new
+        //* Find the user in Portal's DB, if present just match the password and login, no need to access main portal's API.
+        //* Special case handled below, if the user's password is changed later on the Yuva Portal, and main portal had not updated the password.
+        let userDoc1 = await User.findOne({ userId: userIdOrEmail });
+        if (!userDoc1) userDoc1 = await User.findOne({ email: userIdOrEmail });
+        if(userDoc1){
+            //just match the password and login accordingly.
+            //match the password
+            const match = await bcrypt.compare(enteredPassword, userDoc1.password);
+            if (!match) {
+                return res.status(401).json({ statusText: statusText.INVALID_CREDS, areCredsInvalid: true });
+            }
+            //Generate token and login
+            const data1 = {
+                exp: Math.floor(Date.now() / 1000) + vars.token.expiry.USER_IN_SEC,
+                person: {
+                    mongoId: userDoc1._id,
+                    role: "user",
+                },
+            };
+    
+            const token1 = jwt.sign(data1, process.env.JWT_SECRET);
+    
+            return res.status(200).json({ statusText: statusText.LOGIN_IN_SUCCESS, token: token1 });
+        }
+        //!new ends
+        console.log("HERERE\n");
         // Step 1: Send request to Main portal to check user credentials
-        const mainPortalApiUrl = 'http://yiweb.evalue8.info/wp-json/wp/v2/users/me'; // Replace with the Main portal login API URL.
+        const mainPortalApiUrl = 'http://yiweb.evalue8.info/wp-json/wp/v2/users/me'; 
         const mainPortalAuth = {
             username: userIdOrEmail,
             password: enteredPassword
@@ -107,34 +152,25 @@ router.post("/login", userAuth, async (req, res) => {
             mainPortalResponse = await axios.post(mainPortalApiUrl, null, mainPortalConfig);
             //   console.log("here: ", mainPortalResponse);
         } catch (error) {
-            // Main backend returned 401 status, indicating invalid credentials.
             return res.status(401).json({ statusText: statusText.INVALID_CREDS, areCredsInvalid: true });
         }
+        //* If we are here, it means, user is not in Portal's Db but has an account on Main portal.
+        //* We have to create his/her account on Yuva Portal as well and login.
 
         const mainPortalUser = mainPortalResponse.data;
-        // console.log("here: ", mainPortalUser);
+        //* Create account on main portal
+        const salt = await bcrypt.genSalt(vars.bcryptSaltRounds);
+        const hashedPassword = await bcrypt.hash(enteredPassword, salt);
 
-        // Step 2: Check if the user is in the Yuva Portal DB
-        let userDoc = await User.findOne({ userId: userIdOrEmail });
-        // Below line is not needed as userId will always be in the userSchema. But still going to search it this way also.
-        if (!userDoc) userDoc = await User.findOne({ email: userIdOrEmail });
+        const newUser = {
+            userId: userIdOrEmail,
+            password: hashedPassword,
+            email: mainPortalUser.email,
+            fName: mainPortalUser.first_name,
+            lName: mainPortalUser.last_name
+        };
 
-        if (!userDoc) {
-            // User not found in the Yuva Portal DB, create the user.
-            const salt = await bcrypt.genSalt(vars.bcryptSaltRounds);
-            const hashedPassword = await bcrypt.hash(enteredPassword, salt);
-
-            const newUser = {
-                userId: userIdOrEmail,
-                password: hashedPassword,
-                email: mainPortalUser.email,
-                fName: mainPortalUser.first_name,
-                lName: mainPortalUser.last_name
-            };
-
-
-            userDoc = await User.create(newUser);
-        }
+        let userDoc = await User.create(newUser);
 
         // Step 3: Generate token
         const data = {
