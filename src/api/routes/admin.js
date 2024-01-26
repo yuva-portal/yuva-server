@@ -1,7 +1,7 @@
 const express = require("express");
 const router = express.Router();
 const mongoose = require("mongoose");
-const basicAuth = require('express-basic-auth');
+const basicAuth = require("express-basic-auth");
 require("dotenv").config();
 
 // Basic Authentication middleware
@@ -9,15 +9,16 @@ const adminId = process.env.adminId;
 const adminPassword = process.env.adminPassword;
 
 const adminAuth = basicAuth({
-    users: { [adminId]: adminPassword }, // Replace with actual admin credentials
-    challenge: true, // Send a 401 Unauthorized response on failed authentication
-    unauthorizedResponse: 'Unauthorized', // Response message on failed authentication
-  });
+  users: { [adminId]: adminPassword }, // Replace with actual admin credentials
+  challenge: true, // Send a 401 Unauthorized response on failed authentication
+  unauthorizedResponse: "Unauthorized", // Response message on failed authentication
+});
 
 // My models
 const Admin = require("../../databases/mongodb/models/Admin");
 const Vertical = require("../../databases/mongodb/models/Vertical");
 const Course = require("../../databases/mongodb/models/Course");
+const User = require("../../databases/mongodb/models/User");
 
 const bcrypt = require("bcryptjs");
 var jwt = require("jsonwebtoken");
@@ -31,10 +32,8 @@ const { fetchPerson, isAdmin } = require("../../middlewares");
 
 // ! remove extra routes
 
-
-
 router.post("/dummy", adminAuth, async (req, res) => {
-//   console.log(req.body);
+  //   console.log(req.body);
 
   try {
     const salt = await bcrypt.genSalt(10);
@@ -49,9 +48,15 @@ router.post("/dummy", adminAuth, async (req, res) => {
   }
 });
 
-router.post("/verify-token",adminAuth, fetchPerson, isAdmin, async (req, res) => {
-  res.status(200).json({ statusText: statusText.SUCCESS });
-});
+router.post(
+  "/verify-token",
+  adminAuth,
+  fetchPerson,
+  isAdmin,
+  async (req, res) => {
+    res.status(200).json({ statusText: statusText.SUCCESS });
+  }
+);
 
 //////////////////////////////////////// LOGIN ////////////////////////////////////////////////
 
@@ -110,33 +115,39 @@ router.post("/login", adminAuth, async (req, res) => {
 
 /////////////////////////////////////////// All //////////////////////////////////////////
 
-router.get("/verticals/all", adminAuth, fetchPerson, isAdmin, async (req, res) => {
-  // console.log(req.originalUrl);
+router.get(
+  "/verticals/all",
+  adminAuth,
+  fetchPerson,
+  isAdmin,
+  async (req, res) => {
+    // console.log(req.originalUrl);
 
-  try {
-    let allVerticals = await Vertical.find();
-    // console.log(allVerticals);
+    try {
+      let allVerticals = await Vertical.find();
+      // console.log(allVerticals);
 
-    allVerticals = allVerticals.map((oldDoc) => {
-      const newDoc = {
-        _id: oldDoc._id,
-        name: oldDoc.name,
-        desc: oldDoc.desc,
-        imgSrc: oldDoc.imgSrc,
-        courseCount: oldDoc.courseIds.length,
-      };
+      allVerticals = allVerticals.map((oldDoc) => {
+        const newDoc = {
+          _id: oldDoc._id,
+          name: oldDoc.name,
+          desc: oldDoc.desc,
+          imgSrc: oldDoc.imgSrc,
+          courseCount: oldDoc.courseIds.length,
+        };
 
-      return newDoc;
-    });
+        return newDoc;
+      });
 
-    res
-      .status(200)
-      .json({ statusText: statusText.SUCCESS, allVerticals: allVerticals });
-  } catch (err) {
-    // console.log(err.message);
-    res.status(500).json({ statusText: statusText.FAIL });
+      res
+        .status(200)
+        .json({ statusText: statusText.SUCCESS, allVerticals: allVerticals });
+    } catch (err) {
+      // console.log(err.message);
+      res.status(500).json({ statusText: statusText.FAIL });
+    }
   }
-});
+);
 
 //! validated
 router.get(
@@ -238,19 +249,25 @@ router.get(
 /////////////////////////////////////////// ADD ///////////////////////////////////////////
 
 //! validated
-router.post("/verticals/add", adminAuth, fetchPerson, isAdmin, async (req, res) => {
-  // no validation needed mongodb will handle even if name, desc, src is null/empty
-  // console.log(req.body);
-  // const { name, desc, imgSrc } = req.body;
+router.post(
+  "/verticals/add",
+  adminAuth,
+  fetchPerson,
+  isAdmin,
+  async (req, res) => {
+    // no validation needed mongodb will handle even if name, desc, src is null/empty
+    // console.log(req.body);
+    // const { name, desc, imgSrc } = req.body;
 
-  try {
-    await Vertical.create(req.body);
-    res.status(200).json({ statusText: statusText.VERTICAL_CREATE_SUCCESS });
-  } catch (err) {
-    console.error(err.message);
-    res.status(500).json({ statusText: statusText.INTERNAL_SERVER_ERROR });
+    try {
+      await Vertical.create(req.body);
+      res.status(200).json({ statusText: statusText.VERTICAL_CREATE_SUCCESS });
+    } catch (err) {
+      console.error(err.message);
+      res.status(500).json({ statusText: statusText.INTERNAL_SERVER_ERROR });
+    }
   }
-});
+);
 
 //! validated, doubt
 router.post(
@@ -520,7 +537,7 @@ router.patch(
 
       // console.log(verticalDoc);
 
-      verticalDoc.findOneAndUpdate({_id: verticalId}, {})
+      verticalDoc.findOneAndUpdate({ _id: verticalId }, {});
 
       let allCourses = await Course.find({
         _id: { $in: verticalDoc.courseIds },
@@ -549,5 +566,48 @@ router.patch(
     }
   }
 );
+
+router.get("/users/all", async (req, res) => {
+  // todo : paginate, the user count is too high
+  const {
+    page = 1,
+    limit = 10,
+    search = "",
+    sortBy = "fName",
+    sortType = "asc",
+  } = req.query;
+
+  try {
+    const totalDocs = await User.find({
+      $or: [
+        { fName: { $regex: new RegExp(search, "i") } },
+        { userId: { $regex: new RegExp(search, "i") } },
+      ],
+    }).countDocuments();
+
+    const filteredUsers = await User.find({
+      $or: [
+        { fName: { $regex: new RegExp(search, "i") } },
+        { userId: { $regex: new RegExp(search, "i") } },
+      ],
+    })
+      .select("-password")
+      .sort({ [sortBy]: sortType === "asc" ? 1 : -1 })
+      .skip((page - 1) * limit)
+      .limit(limit);
+
+    res.status(200).json({
+      statusText: statusText.SUCCESS,
+      page: page,
+      totalPages: Math.ceil(totalDocs / limit),
+      limit: limit,
+      hasNextPage: page * limit < filteredUsers.length,
+      filteredUsers,
+    });
+  } catch (err) {
+    console.log(err);
+    res.status(500).json({ statusText: statusText.FAIL });
+  }
+});
 
 module.exports = router;
