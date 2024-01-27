@@ -567,7 +567,7 @@ router.patch(
   }
 );
 
-router.get("/users/all", async (req, res) => {
+router.get("/users/all", adminAuth, fetchPerson, isAdmin, async (req, res) => {
   // todo : paginate, the user count is too high
   const {
     page = 1,
