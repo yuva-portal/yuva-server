@@ -569,13 +569,15 @@ router.patch(
 
 router.get("/users/all", adminAuth, fetchPerson, isAdmin, async (req, res) => {
   // todo : paginate, the user count is too high
-  const {
+  let {
     page = 1,
     limit = 10,
     search = "",
     sortBy = "fName",
     sortType = "asc",
   } = req.query;
+
+  page = parseInt(page);
 
   try {
     const totalDocs = await User.find({
@@ -601,7 +603,7 @@ router.get("/users/all", adminAuth, fetchPerson, isAdmin, async (req, res) => {
       page: page,
       totalPages: Math.ceil(totalDocs / limit),
       limit: limit,
-      hasNextPage: page * limit < filteredUsers.length,
+      hasNextPage: page * limit < totalDocs,
       filteredUsers,
     });
   } catch (err) {
