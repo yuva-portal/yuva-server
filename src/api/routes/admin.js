@@ -2,6 +2,7 @@ const express = require("express");
 const router = express.Router();
 const mongoose = require("mongoose");
 const basicAuth = require("express-basic-auth");
+const xlsx = require("xlsx");
 require("dotenv").config();
 
 // Basic Authentication middleware
@@ -27,6 +28,8 @@ var jwt = require("jsonwebtoken");
 const { vars } = require("../../utilities/constants.js");
 const statusText = require("../../utilities/status_text.js");
 const { fetchPerson, isAdmin } = require("../../middlewares");
+const { uploadExcel } = require("../../config/multer_config.js");
+const { convertToJSON } = require("../../utilities/convertToJSON.js");
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 
@@ -612,31 +615,76 @@ router.get("/users/all", adminAuth, fetchPerson, isAdmin, async (req, res) => {
   }
 });
 
-router.get(
-  "/users/:userId",
-  adminAuth,
-  fetchPerson,
-  isAdmin,
-  async (req, res) => {
-    let { userId } = req.params;
-    if (userId == "")
-      res
-        .status(400)
-        .json({ statusText: statusText.FAIL, message: "userId is empty" });
-    try {
-      let user = await User.findOne({ userId }).select("-password");
-      if (!user) {
-        return res
-          .status(404)
-          .json({ statusText: statusText.FAIL, message: "user not found" });
+router.get("/users/:userId", adminAuth, fetchPerson, isAdmin, async (req, res) => {
+  let { userId } = req.params;
+  if (userId == "")
+    res
+      .status(400)
+      .json({ statusText: statusText.FAIL, message: "userId is empty" });
+
+  try {
+    let user = await User.findOne({ userId }).select("-password");
+    if (!user) {
+      return res
+        .status(404)
+        .json({ statusText: statusText.FAIL, message: "user not found" });
+    }
+
+    const vertNames = await Vertical.find().select("_id name");
+    const vertMap = {};
+    vertNames.forEach((vert) => {
+      vertMap[vert._id] = vert.name;
+    });
+
+    const vertData = [];
+    let activity = user.activity;
+    for (let vertical in activity) {
+      let ct = 0;
+      for (let course in activity[vertical]) {
+        for (let unit in activity[vertical][course]) {
+          for (let quiz in activity[vertical][course][unit]) {
+            const quizScore =
+              activity[vertical][course][unit].quiz.scoreInPercent;
+            if (quizScore >= 60) {
+              ct += 1;
+            }
+          }
+        }
       }
 
-      return res.status(200).json({ statusText: statusText.SUCCESS, user });
-    } catch (err) {
-      return res
-        .status(200)
-        .json({ statusText: statusText.FAIL, message: "Invalid userId" });
+      vertData.push({
+        [vertMap[vertical.substring(1)]]: ct,
+      });
     }
+
+    // remove activity from user object
+    user.activity = vertData;
+
+    return res.status(200).json({
+      statusText: statusText.SUCCESS,
+      user: { ...user._doc },
+    });
+  } catch (err) {
+    return res
+      .status(200)
+      .json({ statusText: statusText.FAIL, message: "Invalid userId" });
+  }
+});
+
+// frontend se multer ke jariye file laani hain.
+// backend se multer ke jariye file store karni hain.
+// file ko check karna hai ki usme saare fields valid hai ya nhi hain.
+// excel filel ka data read karke use object main convert karna hai
+// saare objects ka array main store karna hai
+// ek ek karke saare users banana hai
+
+router.post(
+  "/users/upload",
+  uploadExcel.single("userCreds"),
+  async (req, res) => {
+    const users = convertToJSON(req.userCreds?.path);
+
+    return res.json(users);
   }
 );
 

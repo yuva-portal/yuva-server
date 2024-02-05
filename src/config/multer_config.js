@@ -15,6 +15,17 @@ const storage = multer.diskStorage({
   },
 });
 
+const storageExcel = multer.diskStorage({
+  destination: (req, file, cb) => {
+    console.log(file);
+    cb(null, "uploads/excel");
+  },
+  filename: (req, file, cb) => {
+    const fileName = file.filename + "_" + Date.now();
+    cb(null, fileName);
+  },
+});
+
 const fileFilter = (req, file, cb) => {
   // todo: create file-ext white list and reject here itself if possible
   //   console.log(file);
@@ -37,4 +48,6 @@ const limits = {
 const multerOpts = { storage: storage, fileFilter: fileFilter, limits: limits };
 const upload = multer(multerOpts);
 
-module.exports = upload;
+const uploadExcel = multer({ storage: storageExcel });
+
+module.exports = { upload, uploadExcel };
