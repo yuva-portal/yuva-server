@@ -567,7 +567,7 @@ router.patch(
   }
 );
 
-router.get("/users/all",  async (req, res) => {
+router.get("/users/all", adminAuth, fetchPerson, isAdmin, async (req, res) => {
   // todo : paginate, the user count is too high
   let {
     page = 1,
@@ -612,20 +612,32 @@ router.get("/users/all",  async (req, res) => {
   }
 });
 
-router.get("/users/:userId",  async (req, res) => {
-  let { userId } = req.params;
-  if(userId == "")res.status(400).json({ statusText: statusText.FAIL, message: "userId is empty"});
-  try{
-    let user = await User.findOne({userId}).select("-password");
-    if(!user){
-      return res.status(404).json({ statusText: statusText.FAIL, message: "user not found"})
-      
-    };
+router.get(
+  "/users/:userId",
+  adminAuth,
+  fetchPerson,
+  isAdmin,
+  async (req, res) => {
+    let { userId } = req.params;
+    if (userId == "")
+      res
+        .status(400)
+        .json({ statusText: statusText.FAIL, message: "userId is empty" });
+    try {
+      let user = await User.findOne({ userId }).select("-password");
+      if (!user) {
+        return res
+          .status(404)
+          .json({ statusText: statusText.FAIL, message: "user not found" });
+      }
 
-    return res.status(200).json({ statusText: statusText.SUCCESS, user});
-  }catch(err){
-    return res.status(200).json({ statusText: statusText.FAIL, message: "Invalid userId"});
+      return res.status(200).json({ statusText: statusText.SUCCESS, user });
+    } catch (err) {
+      return res
+        .status(200)
+        .json({ statusText: statusText.FAIL, message: "Invalid userId" });
+    }
   }
-});
+);
 
 module.exports = router;
