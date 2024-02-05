@@ -615,7 +615,7 @@ router.get("/users/all", adminAuth, fetchPerson, isAdmin, async (req, res) => {
   }
 });
 
-router.get("/users/:userId", async (req, res) => {
+router.get("/users/:userId", adminAuth, fetchPerson, isAdmin, async (req, res) => {
   let { userId } = req.params;
   if (userId == "")
     res
