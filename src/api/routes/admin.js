@@ -690,10 +690,9 @@ router.get(
           }
         }
 
-        vertData.push({
-          [vertMap[vertical.substring(1)]]: ct,
-        });
+        vertData[vertMap[vertical.substring(1)]] =  ct
       }
+    
 
       // remove activity from user object
       user.activity = vertData;
