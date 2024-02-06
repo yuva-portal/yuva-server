@@ -615,61 +615,68 @@ router.get("/users/all", adminAuth, fetchPerson, isAdmin, async (req, res) => {
   }
 });
 
-router.get("/users/:userId", adminAuth, fetchPerson, isAdmin, async (req, res) => {
-  let { userId } = req.params;
-  if (userId == "")
-    res
-      .status(400)
-      .json({ statusText: statusText.FAIL, message: "userId is empty" });
+router.get(
+  "/users/:userId",
+  adminAuth,
+  fetchPerson,
+  isAdmin,
+  async (req, res) => {
+    let { userId } = req.params;
+    if (userId == "")
+      res
+        .status(400)
+        .json({ statusText: statusText.FAIL, message: "userId is empty" });
 
-  try {
-    let user = await User.findOne({ userId }).select("-password");
-    if (!user) {
-      return res
-        .status(404)
-        .json({ statusText: statusText.FAIL, message: "user not found" });
-    }
+    try {
+      let user = await User.findOne({ userId }).select("-password");
+      if (!user) {
+        return res
+          .status(404)
+          .json({ statusText: statusText.FAIL, message: "user not found" });
+      }
 
-    const vertNames = await Vertical.find().select("_id name");
-    const vertMap = {};
-    vertNames.forEach((vert) => {
-      vertMap[vert._id] = vert.name;
-    });
+      const vertNames = await Vertical.find().select("_id name");
+      const vertMap = {};
+      const vertData = {};
+      vertNames.forEach((vert) => {
+        vertMap[vert._id] = vert.name;
+        vertData[vert.name] = 0;
+      });
 
-    const vertData = [];
-    let activity = user.activity;
-    for (let vertical in activity) {
-      let ct = 0;
-      for (let course in activity[vertical]) {
-        for (let unit in activity[vertical][course]) {
-          for (let quiz in activity[vertical][course][unit]) {
-            const quizScore =
-              activity[vertical][course][unit].quiz.scoreInPercent;
-            if (quizScore >= 60) {
-              ct += 1;
+      let activity = user.activity;
+      for (let vertical in activity) {
+        let ct = 0;
+        for (let course in activity[vertical]) {
+          for (let unit in activity[vertical][course]) {
+            for (let quiz in activity[vertical][course][unit]) {
+              const quizScore =
+                activity[vertical][course][unit].quiz.scoreInPercent;
+              if (quizScore >= 60) {
+                ct += 1;
+              }
             }
           }
         }
+
+        vertData.push({
+          [vertMap[vertical.substring(1)]]: ct,
+        });
       }
 
-      vertData.push({
-        [vertMap[vertical.substring(1)]]: ct,
+      // remove activity from user object
+      user.activity = vertData;
+
+      return res.status(200).json({
+        statusText: statusText.SUCCESS,
+        user: { ...user._doc },
       });
+    } catch (err) {
+      return res
+        .status(200)
+        .json({ statusText: statusText.FAIL, message: "Invalid userId" });
     }
-
-    // remove activity from user object
-    user.activity = vertData;
-
-    return res.status(200).json({
-      statusText: statusText.SUCCESS,
-      user: { ...user._doc },
-    });
-  } catch (err) {
-    return res
-      .status(200)
-      .json({ statusText: statusText.FAIL, message: "Invalid userId" });
   }
-});
+);
 
 // frontend se multer ke jariye file laani hain.
 // backend se multer ke jariye file store karni hain.
