@@ -578,7 +578,7 @@ router.get("/users/all", adminAuth, fetchPerson, isAdmin, async (req, res) => {
     search = "",
     sortBy = "fName",
     sortType = "asc",
-    collegeName = "LNCT",
+    collegeName = "",
   } = req.query;
 
   page = parseInt(page);
@@ -589,7 +589,7 @@ router.get("/users/all", adminAuth, fetchPerson, isAdmin, async (req, res) => {
         { fName: { $regex: new RegExp(search, "i") } },
         { userId: { $regex: new RegExp(search, "i") } },
       ],
-      collegeName: collegeName,
+      collegeName: { $regex: new RegExp(collegeName, "i") },
     }).countDocuments();
 
     const filteredUsers = await User.find({
@@ -597,7 +597,7 @@ router.get("/users/all", adminAuth, fetchPerson, isAdmin, async (req, res) => {
         { fName: { $regex: new RegExp(search, "i") } },
         { userId: { $regex: new RegExp(search, "i") } },
       ],
-      collegeName: collegeName,
+      collegeName: { $regex: new RegExp(collegeName, "i") },
     })
       .select("-password")
       .sort({ [sortBy]: sortType === "asc" ? 1 : -1 })
@@ -618,34 +618,40 @@ router.get("/users/all", adminAuth, fetchPerson, isAdmin, async (req, res) => {
   }
 });
 
-router.get("/users/college-names", adminAuth, fetchPerson, isAdmin, async (req, res) => {
-  const { search } = req.query;
-  try {
-    let collegeNames = await User.aggregate([
-      {
-        $match: {
-          collegeName: { $regex: new RegExp(search, "i") },
+router.get(
+  "/users/college-names",
+  adminAuth,
+  fetchPerson,
+  isAdmin,
+  async (req, res) => {
+    const { search } = req.query;
+    try {
+      let collegeNames = await User.aggregate([
+        {
+          $match: {
+            collegeName: { $regex: new RegExp(search, "i") },
+          },
         },
-      },
-      {
-        $group: {
-          _id: "$collegeName",
+        {
+          $group: {
+            _id: "$collegeName",
+          },
         },
-      },
-    ]);
+      ]);
 
-    collegeNames = collegeNames.map((clg) => clg?._id);
+      collegeNames = collegeNames.map((clg) => clg?._id);
 
-    console.log(collegeNames);
+      console.log(collegeNames);
 
-    return res
-      .status(200)
-      .json({ statusText: statusText.SUCCESS, collegeNames });
-  } catch (err) {
-    console.log(err);
-    return res.status(500).json({ statusText: statusText.FAIL });
+      return res
+        .status(200)
+        .json({ statusText: statusText.SUCCESS, collegeNames });
+    } catch (err) {
+      console.log(err);
+      return res.status(500).json({ statusText: statusText.FAIL });
+    }
   }
-});
+);
 
 router.get(
   "/users/:userId",
@@ -690,9 +696,8 @@ router.get(
           }
         }
 
-        vertData[vertMap[vertical.substring(1)]] =  ct
+        vertData[vertMap[vertical.substring(1)]] = ct;
       }
-    
 
       // remove activity from user object
       user.activity = vertData;
