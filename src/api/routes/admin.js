@@ -1,8 +1,10 @@
 const express = require("express");
 const router = express.Router();
+const cors = require("cors");
 const mongoose = require("mongoose");
 const basicAuth = require("express-basic-auth");
 const xlsx = require("xlsx");
+const fileUpload = require("express-fileupload");
 require("dotenv").config();
 
 // Basic Authentication middleware
@@ -20,6 +22,7 @@ const Admin = require("../../databases/mongodb/models/Admin");
 const Vertical = require("../../databases/mongodb/models/Vertical");
 const Course = require("../../databases/mongodb/models/Course");
 const User = require("../../databases/mongodb/models/User");
+const {ExcelUser} = require("../../databases/mongodb/models/ExcelUser")
 
 const bcrypt = require("bcryptjs");
 var jwt = require("jsonwebtoken");
@@ -28,12 +31,59 @@ var jwt = require("jsonwebtoken");
 const { vars } = require("../../utilities/constants.js");
 const statusText = require("../../utilities/status_text.js");
 const { fetchPerson, isAdmin } = require("../../middlewares");
-const { uploadExcel } = require("../../config/multer_config.js");
-const { convertToJSON } = require("../../utilities/convertToJSON.js");
 
-///////////////////////////////////////////////////////////////////////////////////////////////////
+router.use(cors());
+router.use(fileUpload());
 
 // ! remove extra routes
+
+router.post("/users/upload", async(req, res) => {
+
+  try {
+      if (!req.files || Object.keys(req.files).length === 0) {
+        return res.status(400).send('No files were uploaded.');
+      }
+    
+      const uploadedFile = req.files.file;
+      const workbook = xlsx.read(uploadedFile.data, { type: 'buffer' });
+      const sheetName = workbook.SheetNames[0];
+      const sheet = workbook.Sheets[sheetName];
+      let data = xlsx.utils.sheet_to_json(sheet);
+      
+    // WRAP EVERYTHING IN TRY CATCH
+    
+      if(data.length == 0){
+        res.status(404).json({ error: statusText.FILE_UPLOAD_FAIL, message: "Excel Sheet does not contain any data" });
+      }
+    
+      const headObj = data[0];
+      let name = Object.keys(headObj);
+    
+      const validName = ["S.No.", "Name", "Email"]
+      
+      // check if it is valid
+      name = name.map((n) => n.trim())
+    
+      for(let i=0; i<validName.length; i++){
+        if(name[i] != validName[i]){
+          return res.status(400).json({ error: statusText.FILE_UPLOAD_FAIL, message: "Excel Sheet does not follow the correct format" })
+        }
+      }
+    
+      data = data.map((d) => ({name: d.Name, email: d.Email}));
+      // console.log(data[0]);
+      const op = await ExcelUser.insertMany(data);
+    
+      res.status(200).json({ statusText: statusText.SUCCESS, message: "Excel File uploaded Successfully"});
+    
+  } catch (error) {
+    console.log(error);
+    res.send("error");
+  }
+
+  console.log("On the excel route");
+
+})
 
 router.post("/dummy", adminAuth, async (req, res) => {
   //   console.log(req.body);
@@ -74,7 +124,7 @@ router.post("/login", adminAuth, async (req, res) => {
   try {
     // match creds
     const adminDoc = await Admin.findOne({ adminId: adminId });
-    console.log(adminDoc);
+    console.log("**********",adminDoc);
     if (!adminDoc) {
       // wrong adminId
       return res
@@ -347,7 +397,7 @@ router.post(
           .json({ statusText: statusText.COURSE_NOT_FOUND });
       }
 
-      console.log(unit);
+      console.log("*********",unit);
 
       courseDoc.unitArr.push(unit);
       courseDoc.save((err, updatedCourseDoc) => {
@@ -481,7 +531,7 @@ router.delete(
           .json({ statusText: statusText.COURSE_NOT_FOUND });
       }
 
-      console.log(courseDoc.unitArr.length);
+      console.log("***********",courseDoc.unitArr.length);
 
       res.status(200).json({ statusText: statusText.UNIT_DELETE_SUCCESS });
     } catch (err) {
@@ -641,7 +691,7 @@ router.get(
 
       collegeNames = collegeNames.map((clg) => clg?._id);
 
-      console.log(collegeNames);
+      // console.log("**********",collegeNames);
 
       return res
         .status(200)
@@ -711,23 +761,6 @@ router.get(
         .status(200)
         .json({ statusText: statusText.FAIL, message: "Invalid userId" });
     }
-  }
-);
-
-// frontend se multer ke jariye file laani hain.
-// backend se multer ke jariye file store karni hain.
-// file ko check karna hai ki usme saare fields valid hai ya nhi hain.
-// excel filel ka data read karke use object main convert karna hai
-// saare objects ka array main store karna hai
-// ek ek karke saare users banana hai
-
-router.post(
-  "/users/upload",
-  uploadExcel.single("userCreds"),
-  async (req, res) => {
-    const users = convertToJSON(req.userCreds?.path);
-
-    return res.json(users);
   }
 );
 

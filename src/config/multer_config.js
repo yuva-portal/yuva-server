@@ -45,9 +45,9 @@ const limits = {
   fileSize: 3000 * 1000,
 };
 
-const multerOpts = { storage: storage, fileFilter: fileFilter, limits: limits };
-const upload = multer(multerOpts);
+// const multerOpts = { storage: storage, fileFilter: fileFilter, limits: limits };
+// const upload = multer(multerOpts);
 
-const uploadExcel = multer({ storage: storageExcel });
+// const uploadExcel = multer({ storage: storageExcel });
 
-module.exports = { upload, uploadExcel };
+// module.exports = { upload, uploadExcel };
